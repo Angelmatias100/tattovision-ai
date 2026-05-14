@@ -1,0 +1,183 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── TattooVision AI Design System ──────────────────────────
+       "Underground Elevated" — always dark, no light mode variant
+    ─────────────────────────────────────────────────────────── */
+
+    /* Elevation layers */
+    --background: #000000;       /* Level 0 — canvas */
+    --foreground: #ffffff;
+
+    --card: #0D0010;             /* Level 1 — surfaces / cards */
+    --card-foreground: #ffffff;
+
+    --popover: #1A0025;          /* Level 2 — modals / popovers */
+    --popover-foreground: #ffffff;
+
+    --secondary: #200030;        /* Level 3 — hover / interactive */
+    --secondary-foreground: #C084FC;
+
+    /* Brand accent */
+    --primary: #8B00FF;
+    --primary-foreground: #ffffff;
+
+    --accent: #8B00FF;
+    --accent-foreground: #ffffff;
+
+    /* Muted / subdued */
+    --muted: #0D0010;
+    --muted-foreground: #C084FC;
+
+    /* Semantic */
+    --destructive: #FF3B3B;
+    --destructive-foreground: #ffffff;
+
+    /* Surfaces */
+    --border: #2D0050;
+    --input: #1A0025;
+    --ring: #8B00FF;
+
+    /* Border radius */
+    --radius: 0.5rem;            /* 8px — buttons / inputs */
+    --radius-sm: 0.25rem;        /* 4px */
+    --radius-md: 0.75rem;        /* 12px */
+    --radius-lg: 1rem;           /* 16px — cards */
+    --radius-xl: 1.5rem;         /* 24px */
+
+    /* Sidebar */
+    --sidebar: #0D0010;
+    --sidebar-foreground: #ffffff;
+    --sidebar-primary: #8B00FF;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #1A0025;
+    --sidebar-accent-foreground: #C084FC;
+    --sidebar-border: #2D0050;
+    --sidebar-ring: #8B00FF;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  html {
+    @apply font-sans;
+    color-scheme: dark;
+  }
+
+  /* Headings always use Playfair Display */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-playfair;
+  }
+
+  /* Scrollbar — thin purple tint */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #000000;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2D0050;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #8B00FF;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Glow utilities — used on CTAs and active elements */
+  .shadow-glow {
+    box-shadow: 0 0 30px rgba(139, 0, 255, 0.25);
+  }
+  .shadow-glow-sm {
+    box-shadow: 0 0 15px rgba(139, 0, 255, 0.15);
+  }
+  .shadow-glow-lg {
+    box-shadow: 0 0 40px rgba(139, 0, 255, 0.50);
+  }
+  .hover\:shadow-glow:hover {
+    box-shadow: 0 0 30px rgba(139, 0, 255, 0.25);
+  }
+
+  /* 4px left bar for active sidebar nav items */
+  .nav-active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 4px;
+    background: #8B00FF;
+    border-radius: 0 2px 2px 0;
+  }
+
+  /* TV Tokens chip */
+  .tv-token-badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-mono font-semibold;
+    background: rgba(139, 0, 255, 0.15);
+    border: 1px solid rgba(139, 0, 255, 0.4);
+    color: #C084FC;
+  }
+
+  /* Status chip variants */
+  .chip-success {
+    background: rgba(82, 201, 122, 0.1);
+    border: 1px solid #52C97A;
+    color: #52C97A;
+  }
+  .chip-warning {
+    background: rgba(224, 184, 0, 0.1);
+    border: 1px solid #E0B800;
+    color: #E0B800;
+  }
+  .chip-error {
+    background: rgba(255, 59, 59, 0.1);
+    border: 1px solid #FF3B3B;
+    color: #FF3B3B;
+  }
+  .chip-info {
+    background: rgba(139, 0, 255, 0.1);
+    border: 1px solid #8B00FF;
+    color: #C084FC;
+  }
+}
+
+/* ── Keyframe animations ──────────────────────────────────── */
+@keyframes accordion-down {
+  from { height: 0; }
+  to { height: var(--radix-accordion-content-height); }
+}
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to { height: 0; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(139, 0, 255, 0.20); }
+  50%       { box-shadow: 0 0 40px rgba(139, 0, 255, 0.50); }
+}
+@keyframes slide-in-left {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
