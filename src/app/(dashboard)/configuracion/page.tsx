@@ -42,34 +42,69 @@ const INITIAL_ARTISTS: Artist[] = [
 ];
 
 const BILLING_HISTORY = [
-  { id: "b1", date: "1 May 2026",  amount: "$49.00", plan: "Pro",   status: "Pagado" },
-  { id: "b2", date: "1 Abr 2026",  amount: "$49.00", plan: "Pro",   status: "Pagado" },
-  { id: "b3", date: "1 Mar 2026",  amount: "$49.00", plan: "Pro",   status: "Pagado" },
-  { id: "b4", date: "1 Feb 2026",  amount: "$19.00", plan: "Starter", status: "Pagado" },
+  { id: "b1", date: "1 May 2026",  amount: "$79.00",  plan: "Starter", status: "Pagado" },
+  { id: "b2", date: "1 Abr 2026",  amount: "$79.00",  plan: "Starter", status: "Pagado" },
+  { id: "b3", date: "1 Mar 2026",  amount: "$79.00",  plan: "Starter", status: "Pagado" },
+  { id: "b4", date: "1 Feb 2026",  amount: "$79.00",  plan: "Starter", status: "Pagado" },
 ];
 
 const PLAN_OPTIONS = [
   {
     id: "starter",
     name: "Starter",
-    price: "$19",
-    tokens: 50,
-    features: ["50 TV Tokens / mes", "3 automatizaciones", "CRM básico", "1 artista"],
+    price: "$79",
+    subtitle: null,
+    badge: null,
+    current: true,
+    tokenMax: 200,
+    features: [
+      "200 TV Tokens / mes",
+      "CRM hasta 200 leads",
+      "Agenda con reservas",
+      "1 artista",
+      "Campañas Meta con tokens",
+      "Contenido IA con tokens",
+      "Automatizaciones básicas",
+      "Tokens extra: $9 c/100",
+    ],
   },
   {
     id: "pro",
     name: "Pro",
-    price: "$49",
-    tokens: 200,
-    features: ["200 TV Tokens / mes", "6 automatizaciones", "CRM completo", "Artistas ilimitados", "Campañas Meta Ads"],
-    current: true,
+    price: "$179",
+    subtitle: null,
+    badge: null,
+    current: false,
+    tokenMax: 600,
+    features: [
+      "600 TV Tokens / mes",
+      "CRM ilimitado",
+      "Agenda multi-artista (hasta 5)",
+      "Campañas Meta ilimitadas",
+      "Contenido IA completo",
+      "Automatizaciones avanzadas",
+      "Reportes y analytics",
+      "Tokens extra: $7 c/100",
+    ],
   },
   {
     id: "agency",
     name: "Agency",
-    price: "$99",
-    tokens: 600,
-    features: ["600 TV Tokens / mes", "Automatizaciones ilimitadas", "Multi-estudio", "Soporte prioritario", "API access"],
+    price: "$349",
+    subtitle: "Para estudios grandes",
+    badge: "ESTUDIO",
+    current: false,
+    tokenMax: 2000,
+    features: [
+      "2000 TV Tokens / mes",
+      "Artistas ilimitados",
+      "Tokens acumulables 3 meses",
+      "Editor de video para reels",
+      "Reportes avanzados",
+      "Soporte dedicado",
+      "White label disponible",
+      "Tokens extra: $5 c/100",
+    ],
   },
 ];
 
@@ -433,63 +468,96 @@ function TabIntegraciones() {
 
 function TabPlan() {
   const TOKEN_USED = 147;
-  const TOKEN_MAX  = 200;
-  const tokenPct   = (TOKEN_USED / TOKEN_MAX) * 100;
+  const TOKEN_MAX  = 200;  // Starter plan limit
+  const tokenPct   = Math.min((TOKEN_USED / TOKEN_MAX) * 100, 100);
+
+  // Current plan index — 0 = Starter, 1 = Pro, 2 = Agency
+  const currentIdx = PLAN_OPTIONS.findIndex((p) => p.current);
 
   return (
     <div className="space-y-8 max-w-3xl">
       {/* Plan cards */}
       <div className="grid grid-cols-3 gap-4">
-        {PLAN_OPTIONS.map((plan) => (
-          <div
-            key={plan.id}
-            className="rounded-xl border p-5 flex flex-col gap-4 transition-all duration-200"
-            style={{
-              background:  plan.current ? "rgba(139,0,255,0.1)"   : "rgba(26,0,37,0.7)",
-              borderColor: plan.current ? "rgba(139,0,255,0.5)"   : "rgba(45,0,80,0.6)",
-              boxShadow:   plan.current ? "0 0 30px rgba(139,0,255,0.12)" : "none",
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-sm text-foreground">{plan.name}</span>
-              {plan.current && (
-                <span
-                  className="text-[10px] font-bold px-2 py-0.5 rounded"
-                  style={{ background: "rgba(139,0,255,0.2)", color: "#C084FC" }}
-                >
-                  ACTUAL
-                </span>
-              )}
-            </div>
+        {PLAN_OPTIONS.map((plan, i) => {
+          const isCurrent = plan.current;
+          const isUpgrade = i > currentIdx;
 
-            <div>
-              <span className="text-3xl font-bold text-foreground">{plan.price}</span>
-              <span className="text-xs text-muted-foreground"> / mes</span>
-            </div>
+          let btnLabel = "";
+          let btnStyle: React.CSSProperties = {};
+          if (isCurrent) {
+            btnLabel = "Plan actual";
+            btnStyle = { background: "rgba(45,0,80,0.3)", color: "#4a3060", borderColor: "rgba(45,0,80,0.4)", cursor: "not-allowed" };
+          } else if (isUpgrade) {
+            btnLabel = "Actualizar";
+            btnStyle = { background: "rgba(139,0,255,0.12)", color: "#C084FC", borderColor: "rgba(139,0,255,0.4)" };
+          } else {
+            btnLabel = "Downgrade";
+            btnStyle = { background: "rgba(255,255,255,0.03)", color: "#988ca2", borderColor: "rgba(255,255,255,0.1)" };
+          }
 
-            <ul className="space-y-1.5 flex-1">
-              {plan.features.map((f) => (
-                <li key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Check className="w-3.5 h-3.5 text-primary flex-shrink-0" />
-                  {f}
-                </li>
-              ))}
-            </ul>
+          return (
+            <div
+              key={plan.id}
+              className="rounded-xl border p-5 flex flex-col gap-4 transition-all duration-200"
+              style={{
+                background:  isCurrent ? "rgba(139,0,255,0.1)"          : "rgba(26,0,37,0.7)",
+                borderColor: isCurrent ? "rgba(139,0,255,0.5)"          : "rgba(45,0,80,0.6)",
+                boxShadow:   isCurrent ? "0 0 30px rgba(139,0,255,0.12)" : "none",
+              }}
+            >
+              {/* Name + badge row */}
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <span className="font-bold text-sm text-foreground">{plan.name}</span>
+                  {plan.subtitle && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{plan.subtitle}</p>
+                  )}
+                </div>
+                {isCurrent && (
+                  <span
+                    className="text-[10px] font-bold px-2 py-0.5 rounded flex-shrink-0"
+                    style={{ background: "rgba(139,0,255,0.2)", color: "#C084FC" }}
+                  >
+                    ACTUAL
+                  </span>
+                )}
+                {!isCurrent && plan.badge && (
+                  <span
+                    className="text-[10px] font-bold px-2 py-0.5 rounded flex-shrink-0"
+                    style={{ background: "rgba(82,201,122,0.15)", color: "#52C97A", border: "1px solid rgba(82,201,122,0.3)" }}
+                  >
+                    {plan.badge}
+                  </span>
+                )}
+              </div>
 
-            {!plan.current && (
+              {/* Price */}
+              <div>
+                <span className="text-3xl font-bold text-foreground">{plan.price}</span>
+                <span className="text-xs text-muted-foreground"> / mes</span>
+              </div>
+
+              {/* Features */}
+              <ul className="space-y-1.5 flex-1">
+                {plan.features.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-xs text-muted-foreground">
+                    <Check className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+
+              {/* Action button */}
               <button
+                disabled={isCurrent}
                 className="w-full py-2 rounded-lg text-xs font-bold border transition-colors"
-                style={{
-                  borderColor: plan.id === "agency" ? "rgba(139,0,255,0.4)" : "rgba(255,255,255,0.1)",
-                  color:       plan.id === "agency" ? "#C084FC"             : "#988ca2",
-                  background:  plan.id === "agency" ? "rgba(139,0,255,0.08)" : "rgba(255,255,255,0.03)",
-                }}
+                style={btnStyle}
               >
-                {plan.id === "agency" ? "Actualizar" : "Downgrade"}
+                {btnLabel}
               </button>
-            )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
 
       {/* Token usage */}
@@ -515,7 +583,7 @@ function TabPlan() {
           />
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          {TOKEN_MAX - TOKEN_USED} tokens restantes. Se renuevan el 1 de junio.
+          {TOKEN_MAX - TOKEN_USED} tokens restantes en tu plan Starter. Se renuevan el 1 de junio.
         </p>
       </SectionCard>
 
