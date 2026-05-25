@@ -1,14 +1,32 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useUser } from "@clerk/nextjs";
 import {
-  Plus,
-  CalendarPlus,
-  Zap,
-  PenLine,
-  Bell,
-  ArrowRight,
-  Calendar,
-  Sparkles,
+  Plus, CalendarPlus, Zap, PenLine, Bell, ArrowRight,
+  Calendar, Sparkles,
 } from "lucide-react";
 import Link from "next/link";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface PipelineLead { name: string; instagram: string | null; style: string }
+interface PipelineCol  { id: string; label: string; count: number; dim: boolean; leads: PipelineLead[] }
+interface ApptItem     { time: string; name: string; detail: string }
+
+interface DashboardData {
+  business_name:         string
+  tv_tokens_balance:     number
+  tv_tokens_limit:       number
+  leads_this_month:      number
+  appointments_today:    number
+  pipeline_value:        number
+  pipeline:              PipelineCol[]
+  today_appointments:    ApptItem[]
+  tomorrow_appointments: ApptItem[]
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -17,20 +35,19 @@ function getGreeting() {
   return "Buenas noches";
 }
 
+function formatDate() {
+  return new Date().toLocaleDateString("es-CL", {
+    weekday: "long", day: "numeric", month: "long",
+  }).replace(/^\w/, c => c.toUpperCase());
+}
+
 // ── Metric Cards ──────────────────────────────────────────────────────────────
 
 function MetricCard({
-  label,
-  value,
-  badge,
-  badgeVariant = "success",
-  children,
+  label, value, badge, badgeVariant = "success", children,
 }: {
-  label: string;
-  value: string;
-  badge?: string;
-  badgeVariant?: "success" | "neutral";
-  children?: React.ReactNode;
+  label: string; value: string; badge?: string;
+  badgeVariant?: "success" | "neutral"; children?: React.ReactNode;
 }) {
   return (
     <div className="bg-card border border-border rounded-lg p-6 shadow-card">
@@ -38,9 +55,7 @@ function MetricCard({
         {label}
       </p>
       <div className="flex items-end justify-between">
-        <span className="font-mono text-4xl font-medium text-foreground">
-          {value}
-        </span>
+        <span className="font-mono text-4xl font-medium text-foreground">{value}</span>
         {badge && (
           <span
             className={`text-xs font-bold px-2 py-1 rounded border ${
@@ -58,70 +73,50 @@ function MetricCard({
   );
 }
 
-// ── Pipeline column colors ────────────────────────────────────────────────────
+// ── Pipeline column dot colors ────────────────────────────────────────────────
 
 const COLUMN_DOT: Record<string, string> = {
-  nuevo: "bg-primary",
-  consulta: "bg-[#C084FC]",
+  nuevo:      "bg-primary",
+  consulta:   "bg-[#C084FC]",
   confirmado: "bg-green-500/80",
-  realizado: "bg-muted-foreground",
+  realizado:  "bg-muted-foreground",
 };
-
-// ── Pipeline data ─────────────────────────────────────────────────────────────
-
-const PIPELINE_COLUMNS = [
-  {
-    id: "nuevo",
-    label: "NUEVO",
-    count: 4,
-    leads: [
-      { name: "Sofía Reyes", handle: "@sofi.ink", style: "Blackwork" },
-      { name: "Marcos D.", handle: "@marcos_tatt", style: "Realismo" },
-    ],
-  },
-  {
-    id: "consulta",
-    label: "CONSULTA",
-    count: 3,
-    leads: [
-      { name: "Elena Gil", handle: "@elena_art", style: "Fine Line" },
-      { name: "Julian R.", handle: "@jul_ink", style: "Traditional" },
-    ],
-  },
-  {
-    id: "confirmado",
-    label: "CONFIRMADO",
-    count: 2,
-    leads: [
-      { name: "Carla M.", handle: "@carla_moon", style: "Lettering" },
-      { name: "Pablo S.", handle: "@pablo_sketch", style: "Geo" },
-    ],
-  },
-  {
-    id: "realizado",
-    label: "REALIZADO",
-    count: 5,
-    leads: [
-      { name: "Pedro V.", closedDate: "22 Abr" },
-      { name: "Lucía O.", closedDate: "21 Abr" },
-    ],
-    dim: true,
-  },
-];
-
-// ── Upcoming appointments ─────────────────────────────────────────────────────
-
-const TODAY_CITAS = [
-  { time: "14:00", name: "Ana Morales", detail: "Sesión 2/3 · Manga Completa" },
-  { time: "17:00", name: "Diego Fuentes", detail: "Consulta · Primera vez" },
-];
-
-const MANANA_CITAS = [{ time: "10:00", name: "Laura Peña", detail: "Blackwork Floral" }];
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const greeting = getGreeting();
+  const { user }  = useUser();
+  const firstName = user?.firstName ?? "Artista";
+
+  const [data,    setData]    = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState<string | null>(null);
+
+  const fetchDashboard = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/dashboard");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      setData(await res.json());
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error al cargar el dashboard");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
+
+  const tokens    = data?.tv_tokens_balance ?? 0;
+  const tokensMax = data?.tv_tokens_limit   ?? 500;
+  const tokensPct = Math.min(100, Math.round((tokens / tokensMax) * 100));
+
+  const businessName = data?.business_name ?? "Mi Estudio";
 
   return (
     <div className="p-10 max-w-[1400px] mx-auto">
@@ -129,56 +124,85 @@ export default function DashboardPage() {
       <header className="flex justify-between items-start mb-8">
         <div>
           <h2 className="font-playfair text-3xl font-semibold text-foreground">
-            {greeting}, Matías 👋
+            {greeting}, {firstName} 👋
           </h2>
           <p className="text-muted-foreground text-sm mt-1">
-            Miércoles 23 de abril · Black Lotus Studio
+            {formatDate()} · {businessName}
           </p>
         </div>
         <div className="flex items-center gap-5">
-          {/* Notifications */}
           <button className="relative p-2 rounded-full hover:bg-secondary transition-colors">
             <Bell className="w-6 h-6 text-foreground" />
             <span className="absolute top-1 right-1 w-4 h-4 bg-destructive text-[10px] text-white font-bold rounded-full flex items-center justify-center border-2 border-background">
               3
             </span>
           </button>
-          {/* Avatar */}
           <div className="w-12 h-12 rounded-full border-2 border-primary/60 bg-primary/20 flex items-center justify-center font-bold text-primary text-sm">
-            ML
+            {firstName.slice(0, 2).toUpperCase()}
           </div>
         </div>
       </header>
 
       {/* ── Quick Actions ── */}
       <div className="flex flex-wrap gap-3 mb-8">
-        <button className="bg-primary text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow-glow hover:shadow-glow-lg transition-all flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Nuevo lead
-        </button>
-        <button className="border border-border bg-card text-[#C084FC] px-5 py-2.5 rounded-lg font-bold text-sm hover:border-primary transition-all flex items-center gap-2">
-          <CalendarPlus className="w-4 h-4" />
-          Nueva cita
-        </button>
-        <button className="border border-border bg-card text-foreground px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-secondary transition-all flex items-center gap-2">
-          <Zap className="w-4 h-4" />
-          Crear campaña
-        </button>
-        <button className="border border-border bg-card text-foreground px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-secondary transition-all flex items-center gap-2">
-          <PenLine className="w-4 h-4" />
-          Generar contenido
-        </button>
+        <Link href="/crm">
+          <button className="bg-primary text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow-glow hover:shadow-glow-lg transition-all flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Nuevo lead
+          </button>
+        </Link>
+        <Link href="/agenda">
+          <button className="border border-border bg-card text-[#C084FC] px-5 py-2.5 rounded-lg font-bold text-sm hover:border-primary transition-all flex items-center gap-2">
+            <CalendarPlus className="w-4 h-4" /> Nueva cita
+          </button>
+        </Link>
+        <Link href="/campanas">
+          <button className="border border-border bg-card text-foreground px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-secondary transition-all flex items-center gap-2">
+            <Zap className="w-4 h-4" /> Crear campaña
+          </button>
+        </Link>
+        <Link href="/contenido">
+          <button className="border border-border bg-card text-foreground px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-secondary transition-all flex items-center gap-2">
+            <PenLine className="w-4 h-4" /> Generar contenido
+          </button>
+        </Link>
       </div>
+
+      {/* ── Error banner ── */}
+      {error && (
+        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive">
+          {error}
+        </div>
+      )}
 
       {/* ── Metric Cards ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <MetricCard label="Leads Nuevos" value="24" badge="+12% vs sem." />
-        <MetricCard label="Citas Confirmadas" value="8" badge="+3 esta sem." />
-        <MetricCard label="Campañas Activas" value="2" badge="En curso" badgeVariant="neutral" />
-        <MetricCard label="TV Tokens" value="147/200" badge="12 días" badgeVariant="neutral">
-          <div className="mt-3 w-full h-2 bg-border rounded-full overflow-hidden">
-            <div className="h-full bg-primary rounded-full" style={{ width: "73.5%" }} />
-          </div>
+        <MetricCard
+          label="Leads este mes"
+          value={loading ? "—" : String(data!.leads_this_month)}
+          badge={loading ? "" : undefined}
+        />
+        <MetricCard
+          label="Citas hoy"
+          value={loading ? "—" : String(data!.appointments_today)}
+          badge={loading ? "" : undefined}
+        />
+        <MetricCard
+          label="Pipeline"
+          value={loading ? "—" : `$${Math.round(data!.pipeline_value).toLocaleString("es-CL")}`}
+          badge="Valor activo"
+          badgeVariant="neutral"
+        />
+        <MetricCard
+          label="TV Tokens"
+          value={loading ? "—" : `${tokens}/${tokensMax}`}
+          badge={loading ? "" : `${tokensPct}%`}
+          badgeVariant="neutral"
+        >
+          {!loading && (
+            <div className="mt-3 w-full h-2 bg-border rounded-full overflow-hidden">
+              <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${tokensPct}%` }} />
+            </div>
+          )}
         </MetricCard>
       </div>
 
@@ -190,55 +214,61 @@ export default function DashboardPage() {
             <h4 className="font-playfair text-xl font-semibold text-foreground">
               Pipeline de leads
             </h4>
-            <Link
-              href="/crm"
-              className="text-primary text-sm font-bold hover:underline flex items-center gap-1"
-            >
+            <Link href="/crm" className="text-primary text-sm font-bold hover:underline flex items-center gap-1">
               Ver todos los leads <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-4 gap-3">
-            {PIPELINE_COLUMNS.map((col) => (
-              <div key={col.id} className={col.dim ? "space-y-3 opacity-60" : "space-y-3"}>
-                {/* Column header */}
-                <div className="flex items-center gap-2 pb-2 border-b border-border">
-                  <span className={`w-2 h-2 rounded-full ${COLUMN_DOT[col.id]}`} />
-                  <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
-                    {col.label} ({col.count})
-                  </span>
+          {loading ? (
+            <div className="grid grid-cols-4 gap-3">
+              {[0,1,2,3].map(i => (
+                <div key={i} className="space-y-3">
+                  <div className="h-4 bg-border rounded animate-pulse mb-4" />
+                  {[0,1].map(j => (
+                    <div key={j} className="h-16 bg-[#1A0025] rounded border border-border/30 animate-pulse" />
+                  ))}
                 </div>
-
-                {/* Lead cards */}
-                {col.leads.map((lead) => (
-                  <div
-                    key={lead.name}
-                    className="bg-[#1A0025] p-3 rounded border border-border/30 text-xs space-y-1 cursor-pointer hover:border-primary/40 transition-colors"
-                  >
-                    <p
-                      className={`font-bold text-foreground ${
-                        col.dim ? "line-through" : ""
-                      }`}
-                    >
-                      {lead.name}
-                    </p>
-                    {"handle" in lead ? (
-                      <>
-                        <p className="text-primary/80">{lead.handle}</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {lead.style} — Matías L.
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-[10px] text-muted-foreground">
-                        Cerrado {lead.closedDate}
-                      </p>
-                    )}
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 gap-3">
+              {(data?.pipeline ?? []).map((col) => (
+                <div key={col.id} className={col.dim ? "space-y-3 opacity-60" : "space-y-3"}>
+                  <div className="flex items-center gap-2 pb-2 border-b border-border">
+                    <span className={`w-2 h-2 rounded-full ${COLUMN_DOT[col.id] ?? "bg-muted-foreground"}`} />
+                    <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+                      {col.label} ({col.count})
+                    </span>
                   </div>
-                ))}
-              </div>
-            ))}
-          </div>
+                  {col.leads.map((lead) => (
+                    <div
+                      key={lead.name}
+                      className="bg-[#1A0025] p-3 rounded border border-border/30 text-xs space-y-1 cursor-pointer hover:border-primary/40 transition-colors"
+                    >
+                      <p className={`font-bold text-foreground ${col.dim ? "line-through" : ""}`}>
+                        {lead.name}
+                      </p>
+                      {col.dim ? (
+                        <p className="text-[10px] text-muted-foreground">Completado</p>
+                      ) : (
+                        <>
+                          {lead.instagram && <p className="text-primary/80">{lead.instagram}</p>}
+                          {lead.style && (
+                            <p className="text-[10px] text-muted-foreground">{lead.style}</p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ))}
+                  {col.leads.length === 0 && (
+                    <p className="text-[10px] text-muted-foreground/40 italic text-center pt-2">
+                      Sin leads
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Próximas citas (40%) */}
@@ -247,10 +277,7 @@ export default function DashboardPage() {
             <h4 className="font-playfair text-xl font-semibold text-foreground">
               Próximas citas
             </h4>
-            <Link
-              href="/agenda"
-              className="text-primary text-sm font-bold hover:underline flex items-center gap-1"
-            >
+            <Link href="/agenda" className="text-primary text-sm font-bold hover:underline flex items-center gap-1">
               Ver agenda <Calendar className="w-4 h-4" />
             </Link>
           </div>
@@ -258,65 +285,78 @@ export default function DashboardPage() {
           <div className="space-y-6 flex-1">
             {/* Today */}
             <div>
-              <p className="font-mono text-[10px] text-primary tracking-[0.2em] uppercase mb-3">
-                HOY
-              </p>
-              <div className="space-y-3">
-                {TODAY_CITAS.map((cita) => (
-                  <div
-                    key={cita.time}
-                    className="flex items-center gap-4 bg-secondary/40 p-4 rounded border-l-2 border-primary"
-                  >
-                    <span className="font-mono text-base text-foreground w-14 shrink-0">
-                      {cita.time}
-                    </span>
-                    <div>
-                      <p className="font-bold text-foreground text-sm">{cita.name}</p>
-                      <p className="text-xs text-muted-foreground">{cita.detail}</p>
+              <p className="font-mono text-[10px] text-primary tracking-[0.2em] uppercase mb-3">HOY</p>
+              {loading ? (
+                <div className="space-y-3">
+                  {[0,1].map(i => (
+                    <div key={i} className="h-16 bg-secondary/40 rounded animate-pulse" />
+                  ))}
+                </div>
+              ) : (data?.today_appointments ?? []).length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">Sin citas para hoy</p>
+              ) : (
+                <div className="space-y-3">
+                  {(data?.today_appointments ?? []).map((cita, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-4 bg-secondary/40 p-4 rounded border-l-2 border-primary"
+                    >
+                      <span className="font-mono text-base text-foreground w-14 shrink-0">{cita.time}</span>
+                      <div>
+                        <p className="font-bold text-foreground text-sm">{cita.name}</p>
+                        {cita.detail && (
+                          <p className="text-xs text-muted-foreground">{cita.detail}</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Tomorrow */}
             <div>
-              <p className="font-mono text-[10px] text-muted-foreground tracking-[0.2em] uppercase mb-3">
-                MAÑANA
-              </p>
-              <div className="space-y-3">
-                {MANANA_CITAS.map((cita) => (
-                  <div
-                    key={cita.time}
-                    className="flex items-center gap-4 bg-card p-4 rounded border border-border/30"
-                  >
-                    <span className="font-mono text-base text-muted-foreground w-14 shrink-0">
-                      {cita.time}
-                    </span>
-                    <div>
-                      <p className="font-bold text-foreground text-sm">{cita.name}</p>
-                      <p className="text-xs text-muted-foreground">{cita.detail}</p>
+              <p className="font-mono text-[10px] text-muted-foreground tracking-[0.2em] uppercase mb-3">MAÑANA</p>
+              {loading ? (
+                <div className="h-16 bg-card rounded animate-pulse" />
+              ) : (data?.tomorrow_appointments ?? []).length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">Sin citas para mañana</p>
+              ) : (
+                <div className="space-y-3">
+                  {(data?.tomorrow_appointments ?? []).map((cita, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center gap-4 bg-card p-4 rounded border border-border/30"
+                    >
+                      <span className="font-mono text-base text-muted-foreground w-14 shrink-0">{cita.time}</span>
+                      <div>
+                        <p className="font-bold text-foreground text-sm">{cita.name}</p>
+                        {cita.detail && (
+                          <p className="text-xs text-muted-foreground">{cita.detail}</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
-          <button className="mt-6 w-full py-2.5 text-sm font-bold text-muted-foreground border border-border rounded hover:border-primary hover:text-foreground transition-all">
-            Ver agenda completa →
-          </button>
+          <Link href="/agenda">
+            <button className="mt-6 w-full py-2.5 text-sm font-bold text-muted-foreground border border-border rounded hover:border-primary hover:text-foreground transition-all">
+              Ver agenda completa →
+            </button>
+          </Link>
         </section>
       </div>
 
       {/* ── AI Recommendation Card ── */}
-      <section className="relative bg-card border border-primary/40 rounded-xl p-8 overflow-hidden"
-        style={{ boxShadow: "0 0 40px rgba(139,0,255,0.15)" }}>
-        {/* Background gradient */}
+      <section
+        className="relative bg-card border border-primary/40 rounded-xl p-8 overflow-hidden"
+        style={{ boxShadow: "0 0 40px rgba(139,0,255,0.15)" }}
+      >
         <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent pointer-events-none" />
-
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
-          {/* Text side */}
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
@@ -325,25 +365,28 @@ export default function DashboardPage() {
               </h5>
             </div>
             <p className="text-muted-foreground leading-relaxed">
-              Tienes{" "}
-              <span className="text-primary font-bold">6 leads sin respuesta</span> hace
-              más de 48 horas. Una campaña de reactivación automática podría aumentar tu
-              tasa de conversión en un{" "}
+              Revisa tu{" "}
+              <Link href="/crm" className="text-primary font-bold hover:underline">
+                pipeline de leads
+              </Link>{" "}
+              y lanza una campaña de reactivación para leads sin respuesta hace más de 48 horas.
+              Una automatización puede aumentar tu tasa de conversión en un{" "}
               <span className="text-[#C084FC] font-bold">15%</span> esta semana.
             </p>
             <div className="flex flex-wrap gap-4 pt-2">
-              <button className="bg-primary text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-glow hover:shadow-glow-lg transition-all flex items-center gap-2">
-                <Sparkles className="w-4 h-4" />
-                Generar campaña con IA
-              </button>
-              <button className="border border-border bg-transparent text-primary px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-primary/10 transition-all">
-                Ver leads sin respuesta
-              </button>
+              <Link href="/campanas">
+                <button className="bg-primary text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-glow hover:shadow-glow-lg transition-all flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" /> Generar campaña con IA
+                </button>
+              </Link>
+              <Link href="/crm">
+                <button className="border border-border bg-transparent text-primary px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-primary/10 transition-all">
+                  Ver leads sin respuesta
+                </button>
+              </Link>
             </div>
           </div>
-
-          {/* Decorative visual */}
-          <div className="hidden lg:flex w-56 h-56 shrink-0 items-center justify-center opacity-40 group-hover:opacity-60 transition-opacity">
+          <div className="hidden lg:flex w-56 h-56 shrink-0 items-center justify-center opacity-40">
             <AiOrb />
           </div>
         </div>
@@ -354,9 +397,7 @@ export default function DashboardPage() {
         <p>© 2024 TattooVision AI. Todos los derechos reservados.</p>
         <div className="flex gap-6 mt-3 md:mt-0">
           {["Privacidad", "Términos", "Soporte", "Contacto"].map((item) => (
-            <a key={item} href="#" className="hover:text-foreground transition-colors">
-              {item}
-            </a>
+            <a key={item} href="#" className="hover:text-foreground transition-colors">{item}</a>
           ))}
         </div>
       </footer>
@@ -364,70 +405,37 @@ export default function DashboardPage() {
   );
 }
 
-// ── Decorative AI Orb (SVG, no external images) ───────────────────────────────
+// ── Decorative AI Orb ─────────────────────────────────────────────────────────
 
 function AiOrb() {
   return (
     <svg viewBox="0 0 200 200" className="w-full h-full" aria-hidden>
       <defs>
         <radialGradient id="orbGrad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#8B00FF" stopOpacity="0.6" />
-          <stop offset="60%" stopColor="#4B0082" stopOpacity="0.3" />
-          <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+          <stop offset="0%"   stopColor="#8B00FF" stopOpacity="0.6" />
+          <stop offset="60%"  stopColor="#4B0082" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#000000" stopOpacity="0"   />
         </radialGradient>
         <radialGradient id="coreGrad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#C084FC" stopOpacity="0.9" />
+          <stop offset="0%"   stopColor="#C084FC" stopOpacity="0.9" />
           <stop offset="100%" stopColor="#8B00FF" stopOpacity="0.4" />
         </radialGradient>
       </defs>
-      {/* Outer glow rings */}
       <circle cx="100" cy="100" r="95" fill="url(#orbGrad)" />
       <circle cx="100" cy="100" r="70" fill="none" stroke="#8B00FF" strokeWidth="0.5" strokeOpacity="0.6" />
       <circle cx="100" cy="100" r="50" fill="none" stroke="#C084FC" strokeWidth="0.5" strokeOpacity="0.4" />
       <circle cx="100" cy="100" r="30" fill="none" stroke="#8B00FF" strokeWidth="0.5" strokeOpacity="0.5" />
-      {/* Core */}
       <circle cx="100" cy="100" r="22" fill="url(#coreGrad)" />
-      {/* Orbit dots */}
       {[0, 60, 120, 180, 240, 300].map((deg) => {
         const rad = (deg * Math.PI) / 180;
-        const x = 100 + 70 * Math.cos(rad);
-        const y = 100 + 70 * Math.sin(rad);
-        return <circle key={deg} cx={x} cy={y} r="3" fill="#C084FC" fillOpacity="0.7" />;
+        return <circle key={deg} cx={100 + 70 * Math.cos(rad)} cy={100 + 70 * Math.sin(rad)} r="3" fill="#C084FC" fillOpacity="0.7" />;
       })}
-      {/* DNA-like strands */}
-      <path
-        d="M70 40 Q100 70 130 100 Q100 130 70 160"
-        fill="none"
-        stroke="#8B00FF"
-        strokeWidth="1.5"
-        strokeOpacity="0.5"
-      />
-      <path
-        d="M130 40 Q100 70 70 100 Q100 130 130 160"
-        fill="none"
-        stroke="#C084FC"
-        strokeWidth="1.5"
-        strokeOpacity="0.4"
-      />
-      {/* Cross-links */}
+      <path d="M70 40 Q100 70 130 100 Q100 130 70 160" fill="none" stroke="#8B00FF" strokeWidth="1.5" strokeOpacity="0.5" />
+      <path d="M130 40 Q100 70 70 100 Q100 130 130 160" fill="none" stroke="#C084FC" strokeWidth="1.5" strokeOpacity="0.4" />
       {[55, 70, 85, 100, 115, 130, 145].map((y) => {
         const t = (y - 40) / 120;
-        const x1 = 70 + 30 * Math.sin(t * Math.PI);
-        const x2 = 130 - 30 * Math.sin(t * Math.PI);
-        return (
-          <line
-            key={y}
-            x1={x1}
-            y1={y}
-            x2={x2}
-            y2={y}
-            stroke="#8B00FF"
-            strokeWidth="0.8"
-            strokeOpacity="0.3"
-          />
-        );
+        return <line key={y} x1={70 + 30 * Math.sin(t * Math.PI)} y1={y} x2={130 - 30 * Math.sin(t * Math.PI)} y2={y} stroke="#8B00FF" strokeWidth="0.8" strokeOpacity="0.3" />;
       })}
-      {/* Spark dot */}
       <circle cx="100" cy="100" r="5" fill="#ffffff" fillOpacity="0.9" />
     </svg>
   );

@@ -170,23 +170,36 @@ function TextInput({
   );
 }
 
-function NextButton({ onClick, label = "Siguiente →", disabled = false }: {
+function NextButton({ onClick, label = "Siguiente →", disabled = false, loading = false }: {
   onClick: () => void;
   label?: string;
   disabled?: boolean;
+  loading?: boolean;
 }) {
+  const isDisabled = disabled || loading;
   return (
     <button
       onClick={onClick}
-      disabled={disabled}
-      className="w-full py-3.5 rounded-xl font-bold text-white text-sm transition-all duration-200 mt-8"
+      disabled={isDisabled}
+      className="w-full py-3.5 rounded-xl font-bold text-white text-sm transition-all duration-200 mt-8 flex items-center justify-center gap-2"
       style={{
-        background: disabled ? "rgba(45,0,80,0.4)" : "linear-gradient(135deg, #8B00FF, #6A00C8)",
-        boxShadow: disabled ? "none" : "0 0 24px rgba(139,0,255,0.35)",
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.5 : 1,
+        background: isDisabled ? "rgba(45,0,80,0.4)" : "linear-gradient(135deg, #8B00FF, #6A00C8)",
+        boxShadow: isDisabled ? "none" : "0 0 24px rgba(139,0,255,0.35)",
+        cursor: isDisabled ? "not-allowed" : "pointer",
+        opacity: isDisabled ? 0.5 : 1,
       }}
     >
+      {loading && (
+        <svg
+          className="animate-spin w-4 h-4 text-white flex-shrink-0"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+        </svg>
+      )}
       {label}
     </button>
   );
@@ -508,7 +521,17 @@ function Step4({
 
 // ── Step 5 ────────────────────────────────────────────────────────────────────
 
-function Step5({ data, onFinish }: { data: FormData; onFinish: () => void }) {
+function Step5({
+  data,
+  onFinish,
+  isLoading = false,
+  error = null,
+}: {
+  data: FormData;
+  onFinish: () => void;
+  isLoading?: boolean;
+  error?: string | null;
+}) {
   const summaryItems = [
     { label: "Estudio", value: data.studioName || "—" },
     { label: "Ciudad", value: `${data.city || "—"}, ${data.country}` },
@@ -573,7 +596,24 @@ function Step5({ data, onFinish }: { data: FormData; onFinish: () => void }) {
         <span style={{ color: "#C084FC" }}>Configuración</span> en cualquier momento.
       </p>
 
-      <NextButton onClick={onFinish} label="Ir al dashboard →" />
+      {error && (
+        <div
+          className="mt-4 px-4 py-3 rounded-xl text-xs text-left leading-relaxed"
+          style={{
+            background: "rgba(255,50,50,0.08)",
+            border: "1px solid rgba(255,80,80,0.3)",
+            color: "#f87171",
+          }}
+        >
+          <span className="font-bold">Error al guardar: </span>{error}
+        </div>
+      )}
+
+      <NextButton
+        onClick={onFinish}
+        label={isLoading ? "Guardando…" : "Ir al dashboard →"}
+        loading={isLoading}
+      />
     </div>
   );
 }
@@ -596,11 +636,45 @@ const TOTAL_STEPS = 5;
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [step, setStep]   = useState(1);
-  const [data, setData]   = useState<FormData>(INITIAL);
+  const [step, setStep]         = useState(1);
+  const [data, setData]         = useState<FormData>(INITIAL);
+  const [isLoading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const patch = (p: Partial<FormData>) => setData((prev) => ({ ...prev, ...p }));
   const next  = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS));
+
+  const handleFinish = async () => {
+    setLoading(true);
+    setApiError(null);
+
+    try {
+      const res = await fetch('/api/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studioName:    data.studioName,
+          city:          data.city,
+          country:       data.country,
+          styles:        data.styles,
+          avgTicket:     data.avgTicket,
+          citasPerMonth: data.citasPerMonth,
+          instagram:     data.instagram,
+        }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json.error ?? `HTTP ${res.status}`);
+      }
+
+      router.push('/dashboard');
+    } catch (err: unknown) {
+      setApiError(err instanceof Error ? err.message : 'Error desconocido. Intenta nuevamente.');
+      setLoading(false);
+    }
+  };
 
   return (
     <div
@@ -638,7 +712,12 @@ export default function OnboardingPage() {
           {step === 3 && <Step3 data={data} onChange={patch} onNext={next} />}
           {step === 4 && <Step4 data={data} onChange={patch} onNext={next} />}
           {step === 5 && (
-            <Step5 data={data} onFinish={() => router.push("/dashboard")} />
+            <Step5
+              data={data}
+              onFinish={handleFinish}
+              isLoading={isLoading}
+              error={apiError}
+            />
           )}
         </div>
 

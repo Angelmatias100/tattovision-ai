@@ -1,261 +1,168 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
-  Plus,
-  Search,
-  LayoutGrid,
-  List,
-  MoreHorizontal,
-  MoreVertical,
-  Clock,
-  MessageCircle,
-  X,
-  Send,
-  MoveUp,
-  CalendarPlus,
-  ChevronDown,
+  Plus, Search, LayoutGrid, List, MoreHorizontal,
+  MoreVertical, Clock, MessageCircle, X, Send,
+  MoveUp, CalendarPlus, ChevronDown, UserRound,
 } from "lucide-react";
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 type LeadStatus =
-  | "nuevo"
-  | "respondido"
-  | "consulta"
-  | "presupuesto"
-  | "deposito"
-  | "confirmado"
-  | "realizado"
-  | "reactivar";
+  | "nuevo" | "respondido" | "consulta" | "presupuesto"
+  | "deposito" | "confirmado" | "realizado" | "reactivar";
+
+/** Raw row returned from Supabase leads table */
+interface DbLead {
+  id:             string;
+  business_id:    string;
+  name:           string;
+  instagram:      string | null;
+  phone:          string | null;
+  email:          string | null;
+  source:         string | null;
+  status:         string;
+  style_interest: string[];
+  body_part:      string | null;
+  budget_min:     number | null;
+  budget_max:     number | null;
+  notes:          string | null;
+  created_at:     string;
+}
 
 interface HistoryEvent {
-  time: string;
-  title: string;
-  desc: string;
+  time:    string;
+  title:   string;
+  desc:    string;
   active?: boolean;
 }
 
+/** UI-friendly shape used throughout the components */
 interface Lead {
-  id: string;
-  name: string;
-  initials: string;
-  instagram: string;
-  style: string;
-  budget?: string;
-  daysAgo: string;
-  messages: number;
-  status: LeadStatus;
-  artist: string;
+  id:             string;
+  name:           string;
+  initials:       string;
+  instagram:      string;
+  style:          string;
+  budget:         string;
+  daysAgo:        string;
+  messages:       number;
+  status:         LeadStatus;
+  artist:         string;
   artistInitials: string;
-  phone?: string;
-  email?: string;
-  bodyZone?: string;
-  notes?: string;
-  source?: string;
-  history: HistoryEvent[];
+  phone?:         string;
+  email?:         string;
+  bodyZone?:      string;
+  notes?:         string;
+  source?:        string;
+  history:        HistoryEvent[];
+}
+
+interface NewLeadForm {
+  name:          string;
+  instagram:     string;
+  phone:         string;
+  styleInterest: string;
+  budgetMin:     string;
+  budgetMax:     string;
+  notes:         string;
 }
 
 // ── Column config ─────────────────────────────────────────────────────────────
 
-const COLUMNS: {
-  id: LeadStatus;
-  label: string;
-  color: string;
-  badgeBg: string;
-}[] = [
-  { id: "nuevo", label: "NUEVO", color: "#5B8EF0", badgeBg: "#5B8EF01A" },
-  { id: "respondido", label: "RESPONDIDO", color: "#8B00FF", badgeBg: "#8B00FF1A" },
-  { id: "consulta", label: "CONSULTA", color: "#6A00C8", badgeBg: "#6A00C81A" },
+const COLUMNS: { id: LeadStatus; label: string; color: string; badgeBg: string }[] = [
+  { id: "nuevo",       label: "NUEVO",       color: "#5B8EF0", badgeBg: "#5B8EF01A" },
+  { id: "respondido",  label: "RESPONDIDO",  color: "#8B00FF", badgeBg: "#8B00FF1A" },
+  { id: "consulta",    label: "CONSULTA",    color: "#6A00C8", badgeBg: "#6A00C81A" },
   { id: "presupuesto", label: "PRESUPUESTO", color: "#FFB547", badgeBg: "#FFB5471A" },
-  { id: "deposito", label: "DEPÓSITO", color: "#FF8C00", badgeBg: "#FF8C001A" },
-  { id: "confirmado", label: "CONFIRMADO", color: "#52C97A", badgeBg: "#52C97A1A" },
-  { id: "realizado", label: "REALIZADO", color: "#988ca2", badgeBg: "#988ca21A" },
-  { id: "reactivar", label: "REACTIVAR", color: "#FF3B3B", badgeBg: "#FF3B3B1A" },
+  { id: "deposito",    label: "DEPÓSITO",    color: "#FF8C00", badgeBg: "#FF8C001A" },
+  { id: "confirmado",  label: "CONFIRMADO",  color: "#52C97A", badgeBg: "#52C97A1A" },
+  { id: "realizado",   label: "REALIZADO",   color: "#988ca2", badgeBg: "#988ca21A" },
+  { id: "reactivar",   label: "REACTIVAR",   color: "#FF3B3B", badgeBg: "#FF3B3B1A" },
 ];
 
-// ── Lead data ────────────────────────────────────────────────────────────────
-
-const LEADS: Lead[] = [
-  {
-    id: "1", name: "Sofía Martínez", initials: "SM", instagram: "@sofi.ink",
-    style: "BLACKWORK", budget: "$200–$350", daysAgo: "Hace 2d", messages: 0,
-    status: "nuevo", artist: "Matías López", artistInitials: "ML",
-    phone: "+34 612 345 678", email: "sofia.mtz@email.com",
-    bodyZone: "Antebrazo exterior", source: "Instagram",
-    notes: "Interesada en un diseño tipo mandala con sombreado de puntos. Prefiere citas por la tarde. Sin alergias reportadas.",
-    history: [
-      { time: "HOY", title: "Formulario recibido", desc: "Lead generado automáticamente vía Web Widget.", active: true },
-      { time: "12:10", title: "Respuesta pendiente", desc: "El sistema notificó al artista asignado." },
-    ],
-  },
-  {
-    id: "2", name: "Marcos Díaz", initials: "MD", instagram: "@marcos_tatt",
-    style: "REALISMO", budget: "$400–$600", daysAgo: "Hace 3d", messages: 1,
-    status: "nuevo", artist: "Matías López", artistInitials: "ML",
-    phone: "+34 611 222 333", email: "marcos.diaz@email.com",
-    bodyZone: "Pecho", source: "Instagram",
-    notes: "Quiere retrato de su mascota. Traerá fotos a la consulta.",
-    history: [
-      { time: "HOY", title: "Lead recibido", desc: "Mensaje directo en Instagram.", active: true },
-    ],
-  },
-  {
-    id: "3", name: "Ana Torres", initials: "AT", instagram: "@ana.tattoo",
-    style: "FINE LINE", budget: "$150–$250", daysAgo: "Hace 1d", messages: 0,
-    status: "nuevo", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Muñeca", source: "Web",
-    history: [{ time: "AYER", title: "Formulario recibido", desc: "Lead generado vía formulario web.", active: true }],
-  },
-  {
-    id: "4", name: "Carlos Ruiz", initials: "CR", instagram: "@crl.ink",
-    style: "GEOMETRIC", budget: "$300–$500", daysAgo: "Hace 4d", messages: 2,
-    status: "nuevo", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Espalda", source: "Referido",
-    history: [{ time: "Hace 4d", title: "Lead captado", desc: "Referido por cliente anterior.", active: true }],
-  },
-  {
-    id: "5", name: "Javier Rico", initials: "JR", instagram: "@javi.rico",
-    style: "REALISMO", budget: "$500–$800", daysAgo: "Hace 1h", messages: 3,
-    status: "respondido", artist: "Matías López", artistInitials: "ML",
-    phone: "+34 644 555 666", email: "javier.rico@email.com",
-    bodyZone: "Manga completa", source: "Instagram",
-    history: [
-      { time: "HOY", title: "Mensaje enviado", desc: "Primera respuesta enviada por el artista.", active: true },
-      { time: "Hace 1d", title: "Lead recibido", desc: "DM en Instagram." },
-    ],
-  },
-  {
-    id: "6", name: "María Font", initials: "MF", instagram: "@maria.font",
-    style: "WATERCOLOR", budget: "$200–$300", daysAgo: "Hace 3h", messages: 5,
-    status: "respondido", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Costado", source: "Instagram",
-    history: [{ time: "Hace 3h", title: "Respondido", desc: "Cliente solicitó fotos de portfolio.", active: true }],
-  },
-  {
-    id: "7", name: "Luis Vera", initials: "LV", instagram: "@luisv.tatt",
-    style: "TRADITIONAL", budget: "$150–$200", daysAgo: "Hace 5h", messages: 2,
-    status: "respondido", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Tobillo", source: "Web",
-    history: [{ time: "Hace 5h", title: "Respondido", desc: "Enviado catálogo de estilos.", active: true }],
-  },
-  {
-    id: "8", name: "Elena Gil", initials: "EG", instagram: "@elena_art",
-    style: "FINE LINE", budget: "$180–$280", daysAgo: "Hace 2d", messages: 4,
-    status: "consulta", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Clavícula", source: "Instagram",
-    notes: "Quiere algo minimalista. Consultó sobre tiempos de cicatrización.",
-    history: [
-      { time: "Hace 2d", title: "Consulta en curso", desc: "Intercambio de referencias de diseño.", active: true },
-    ],
-  },
-  {
-    id: "9", name: "Julian Ramos", initials: "JR", instagram: "@jul_ink",
-    style: "TRADITIONAL", budget: "$200–$350", daysAgo: "Hace 1d", messages: 6,
-    status: "consulta", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Pierna", source: "Referido",
-    history: [{ time: "Hace 1d", title: "Consulta activa", desc: "Ajustando detalles del diseño.", active: true }],
-  },
-  {
-    id: "10", name: "Beatriz Lara", initials: "BL", instagram: "@bea.lara",
-    style: "NEO-TRAD", budget: "$350–$500", daysAgo: "Hace 3d", messages: 3,
-    status: "consulta", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Hombro", source: "Instagram",
-    history: [{ time: "Hace 3d", title: "Revisando referencias", desc: "Cliente envió imágenes de inspiración.", active: true }],
-  },
-  {
-    id: "11", name: "Pedro Vega", initials: "PV", instagram: "@pedro.v",
-    style: "BLACKWORK", budget: "$600–$900", daysAgo: "Hace 5d", messages: 8,
-    status: "presupuesto", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Espalda completa", source: "Web",
-    notes: "Presupuesto enviado. Esperando confirmación.",
-    history: [
-      { time: "Hace 5d", title: "Presupuesto enviado", desc: "PDF detallado enviado por email.", active: true },
-      { time: "Hace 7d", title: "Consulta completada", desc: "Diseño aprobado tras dos revisiones." },
-    ],
-  },
-  {
-    id: "12", name: "Natalia Kim", initials: "NK", instagram: "@nati.kim",
-    style: "JAPANESE", budget: "$400–$600", daysAgo: "Hace 4d", messages: 5,
-    status: "presupuesto", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Manga", source: "Instagram",
-    history: [{ time: "Hace 4d", title: "Presupuesto enviado", desc: "Cliente evaluando opciones.", active: true }],
-  },
-  {
-    id: "13", name: "Roberto Cruz", initials: "RC", instagram: "@rob.cruz",
-    style: "REALISMO", budget: "$350–$500", daysAgo: "Hace 6d", messages: 10,
-    status: "deposito", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Antebrazo", source: "Referido",
-    history: [
-      { time: "Hace 6d", title: "Depósito recibido", desc: "$100 recibidos para reservar cita.", active: true },
-    ],
-  },
-  {
-    id: "14", name: "Isabel Nava", initials: "IN", instagram: "@isa.nava",
-    style: "FINE LINE", budget: "$200–$300", daysAgo: "Hace 7d", messages: 7,
-    status: "deposito", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Cuello", source: "Instagram",
-    history: [{ time: "Hace 7d", title: "Depósito recibido", desc: "Pago parcial confirmado.", active: true }],
-  },
-  {
-    id: "15", name: "Carla Moon", initials: "CM", instagram: "@carla_moon",
-    style: "LETTERING", budget: "$150–$250", daysAgo: "Hace 8d", messages: 12,
-    status: "confirmado", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Antebrazo interior", source: "Web",
-    history: [{ time: "Hace 8d", title: "Cita confirmada", desc: "Agendado para el 30 de abril, 14:00.", active: true }],
-  },
-  {
-    id: "16", name: "Pablo Sketch", initials: "PS", instagram: "@pablo_sketch",
-    style: "GEOMETRIC", budget: "$280–$400", daysAgo: "Hace 9d", messages: 9,
-    status: "confirmado", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Brazo", source: "Instagram",
-    history: [{ time: "Hace 9d", title: "Cita confirmada", desc: "Agendado para el 2 de mayo, 11:00.", active: true }],
-  },
-  {
-    id: "17", name: "Pedro V.", initials: "PV", instagram: "@pedrov",
-    style: "BLACKWORK", budget: "$400", daysAgo: "22 Abr", messages: 15,
-    status: "realizado", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Espalda", source: "Referido",
-    history: [{ time: "22 Abr", title: "Tatuaje realizado", desc: "Sesión completada. Cliente satisfecho.", active: true }],
-  },
-  {
-    id: "18", name: "Lucía O.", initials: "LO", instagram: "@luci.o",
-    style: "WATERCOLOR", budget: "$350", daysAgo: "21 Abr", messages: 11,
-    status: "realizado", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Pierna", source: "Instagram",
-    history: [{ time: "21 Abr", title: "Tatuaje realizado", desc: "Trabajo finalizado en una sesión.", active: true }],
-  },
-  {
-    id: "19", name: "Diego Fuentes", initials: "DF", instagram: "@diego.f",
-    style: "TRADITIONAL", budget: "$200–$300", daysAgo: "Hace 14d", messages: 3,
-    status: "reactivar", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Brazo", source: "Instagram",
-    notes: "No respondió al último mensaje. Candidato para campaña de reactivación.",
-    history: [
-      { time: "Hace 14d", title: "Sin respuesta", desc: "Último mensaje sin reply.", active: true },
-      { time: "Hace 20d", title: "Consulta iniciada", desc: "Interés inicial confirmado." },
-    ],
-  },
-  {
-    id: "20", name: "Laura Peña", initials: "LP", instagram: "@laura.p",
-    style: "BLACKWORK", budget: "$500–$700", daysAgo: "Hace 21d", messages: 2,
-    status: "reactivar", artist: "Matías López", artistInitials: "ML",
-    bodyZone: "Espalda", source: "Web",
-    notes: "Interesada hace 3 semanas. Sin actividad desde el primer contacto.",
-    history: [
-      { time: "Hace 21d", title: "Lead frío", desc: "Sin actividad desde contacto inicial.", active: true },
-    ],
-  },
+const STYLES = [
+  "Blackwork", "Realismo", "Japonés", "Neo-trad",
+  "Minimalista", "Acuarela", "Old school", "Lettering",
+  "Geometric", "Fine Line", "Traditional", "Watercolor",
 ];
 
-// ── Shared pieces ─────────────────────────────────────────────────────────────
+// ── Transform helpers ─────────────────────────────────────────────────────────
+
+function getInitials(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .slice(0, 2)
+    .join("");
+}
+
+function relativeTime(dateStr: string): string {
+  const diffMs  = Date.now() - new Date(dateStr).getTime();
+  const mins    = Math.floor(diffMs / 60_000);
+  const hours   = Math.floor(mins  / 60);
+  const days    = Math.floor(hours / 24);
+  if (mins  <  1) return "Ahora";
+  if (mins  < 60) return `Hace ${mins}min`;
+  if (hours < 24) return `Hace ${hours}h`;
+  if (days  ===1) return "Ayer";
+  if (days  < 14) return `Hace ${days}d`;
+  return new Date(dateStr).toLocaleDateString("es", { day: "numeric", month: "short" });
+}
+
+function dbToUiLead(db: DbLead): Lead {
+  const rawStyle = db.style_interest?.[0] ?? "";
+  const style    = rawStyle ? rawStyle.toUpperCase() : "—";
+
+  let budget = "—";
+  if (db.budget_min != null && db.budget_max != null) {
+    budget = `$${db.budget_min}–$${db.budget_max}`;
+  } else if (db.budget_min != null) {
+    budget = `$${db.budget_min}+`;
+  } else if (db.budget_max != null) {
+    budget = `Hasta $${db.budget_max}`;
+  }
+
+  const instagram = db.instagram
+    ? `@${db.instagram.replace(/^@/, "")}`
+    : "—";
+
+  return {
+    id:             db.id,
+    name:           db.name,
+    initials:       getInitials(db.name),
+    instagram,
+    style,
+    budget,
+    daysAgo:        relativeTime(db.created_at),
+    messages:       0,
+    status:         (db.status as LeadStatus) ?? "nuevo",
+    artist:         "Sin asignar",
+    artistInitials: "SA",
+    phone:          db.phone    ?? undefined,
+    email:          db.email    ?? undefined,
+    bodyZone:       db.body_part ?? undefined,
+    notes:          db.notes    ?? undefined,
+    source:         db.source   ?? undefined,
+    history: [
+      {
+        time:   relativeTime(db.created_at),
+        title:  "Lead creado",
+        desc:   `Registrado el ${new Date(db.created_at).toLocaleDateString("es", { day: "numeric", month: "long", year: "numeric" })}`,
+        active: true,
+      },
+    ],
+  };
+}
+
+// ── Shared UI ─────────────────────────────────────────────────────────────────
 
 function Initials({ text, size = "sm" }: { text: string; size?: "sm" | "lg" }) {
   const dim = size === "lg" ? "w-16 h-16 text-xl" : "w-8 h-8 text-[10px]";
   return (
-    <div
-      className={`${dim} rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center font-bold text-primary shrink-0`}
-    >
+    <div className={`${dim} rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center font-bold text-primary shrink-0`}>
       {text}
     </div>
   );
@@ -269,13 +176,338 @@ function StyleBadge({ label }: { label: string }) {
   );
 }
 
-// ── Lead card ─────────────────────────────────────────────────────────────────
+// ── Loading skeleton ──────────────────────────────────────────────────────────
 
-function LeadCard({ lead, onOpen }: { lead: Lead; onOpen: (l: Lead) => void }) {
+function SkeletonCard() {
+  return (
+    <div className="bg-[#0D0010] p-4 rounded-lg border border-border animate-pulse">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="w-8 h-8 rounded-full bg-white/5" />
+        <div className="h-3 w-28 rounded bg-white/5" />
+      </div>
+      <div className="h-2 w-20 rounded bg-white/5 mb-3" />
+      <div className="flex gap-2 mb-3">
+        <div className="h-5 w-16 rounded bg-white/5" />
+        <div className="h-5 w-20 rounded bg-white/5" />
+      </div>
+      <div className="border-t border-border/30 pt-3 flex justify-between">
+        <div className="h-2 w-14 rounded bg-white/5" />
+        <div className="h-2 w-8  rounded bg-white/5" />
+      </div>
+    </div>
+  );
+}
+
+function KanbanSkeleton() {
+  const counts = [2, 1, 2, 1, 1, 2, 1, 1]; // fixed to avoid hydration mismatch
+  return (
+    <div className="flex gap-5 h-full" style={{ minWidth: "max-content" }}>
+      {COLUMNS.map((col, ci) => (
+        <div key={col.id} className="flex flex-col shrink-0 w-[300px]">
+          <div className="mb-4 pt-2" style={{ borderTop: `4px solid ${col.color}` }}>
+            <div className="h-3 w-24 rounded bg-white/5 animate-pulse" />
+          </div>
+          <div className="space-y-4">
+            {Array.from({ length: counts[ci] }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Empty state ───────────────────────────────────────────────────────────────
+
+function EmptyState({ onAdd }: { onAdd: () => void }) {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center gap-5 pb-20">
+      <div
+        className="w-20 h-20 rounded-full flex items-center justify-center"
+        style={{ background: "rgba(139,0,255,0.08)", border: "1px solid rgba(139,0,255,0.2)" }}
+      >
+        <UserRound className="w-9 h-9" style={{ color: "#8B00FF" }} />
+      </div>
+      <div className="text-center">
+        <h3 className="font-playfair text-2xl font-bold text-foreground mb-2">
+          No tienes leads aún
+        </h3>
+        <p className="text-muted-foreground text-sm">
+          Agrega tu primer lead para empezar
+        </p>
+      </div>
+      <button
+        onClick={onAdd}
+        className="flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-sm text-white transition-all"
+        style={{
+          background:  "linear-gradient(135deg, #8B00FF, #6A00C8)",
+          boxShadow:   "0 0 24px rgba(139,0,255,0.35)",
+        }}
+      >
+        <Plus className="w-4 h-4" />
+        Agregar lead
+      </button>
+    </div>
+  );
+}
+
+// ── New lead modal ────────────────────────────────────────────────────────────
+
+const EMPTY_FORM: NewLeadForm = {
+  name: "", instagram: "", phone: "",
+  styleInterest: "", budgetMin: "", budgetMax: "", notes: "",
+};
+
+function NewLeadModal({
+  onClose,
+  onCreated,
+}: {
+  onClose:   () => void;
+  onCreated: (lead: Lead) => void;
+}) {
+  const [form, setForm]        = useState<NewLeadForm>(EMPTY_FORM);
+  const [isSubmitting, setSub] = useState(false);
+  const [error, setError]      = useState<string | null>(null);
+
+  const patch = (p: Partial<NewLeadForm>) => setForm((prev) => ({ ...prev, ...p }));
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim()) return;
+    setSub(true);
+    setError(null);
+
+    try {
+      const res  = await fetch("/api/leads", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name:          form.name.trim(),
+          instagram:     form.instagram.trim() || null,
+          phone:         form.phone.trim()     || null,
+          styleInterest: form.styleInterest    || null,
+          budgetMin:     form.budgetMin        || null,
+          budgetMax:     form.budgetMax        || null,
+          notes:         form.notes.trim()     || null,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
+      onCreated(dbToUiLead(json.lead as DbLead));
+      onClose();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Error al crear el lead");
+      setSub(false);
+    }
+  };
+
+  const inputCls =
+    "w-full rounded-lg px-4 py-2.5 text-sm text-white placeholder:text-muted-foreground outline-none transition-colors bg-[#0D0010] border border-border focus:border-primary";
+
   return (
     <div
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-6"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="bg-[#1A0025] border border-border rounded-xl w-full max-w-lg shadow-2xl">
+        {/* Header */}
+        <div className="p-6 border-b border-border flex justify-between items-center">
+          <h2 className="font-playfair text-xl font-semibold text-foreground">Nuevo Lead</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+          {/* Nombre */}
+          <div>
+            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+              Nombre <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              autoFocus
+              value={form.name}
+              onChange={(e) => patch({ name: e.target.value })}
+              placeholder="Nombre del cliente"
+              className={inputCls}
+            />
+          </div>
+
+          {/* Instagram + Teléfono */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                Instagram
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">@</span>
+                <input
+                  type="text"
+                  value={form.instagram}
+                  onChange={(e) => patch({ instagram: e.target.value })}
+                  placeholder="handle"
+                  className={`${inputCls} pl-7`}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                Teléfono
+              </label>
+              <input
+                type="tel"
+                value={form.phone}
+                onChange={(e) => patch({ phone: e.target.value })}
+                placeholder="+1 234 567 890"
+                className={inputCls}
+              />
+            </div>
+          </div>
+
+          {/* Estilo */}
+          <div>
+            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+              Estilo de interés
+            </label>
+            <div className="relative">
+              <select
+                value={form.styleInterest}
+                onChange={(e) => patch({ styleInterest: e.target.value })}
+                className={`${inputCls} appearance-none pr-8 cursor-pointer`}
+              >
+                <option value="">Selecciona un estilo</option>
+                {STYLES.map((s) => (
+                  <option key={s} value={s} style={{ background: "#0D0010" }}>{s}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            </div>
+          </div>
+
+          {/* Presupuesto */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                Presupuesto mín.
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-bold">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.budgetMin}
+                  onChange={(e) => patch({ budgetMin: e.target.value })}
+                  placeholder="100"
+                  className={`${inputCls} pl-7`}
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                Presupuesto máx.
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-bold">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={form.budgetMax}
+                  onChange={(e) => patch({ budgetMax: e.target.value })}
+                  placeholder="500"
+                  className={`${inputCls} pl-7`}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Notas */}
+          <div>
+            <label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+              Notas
+            </label>
+            <textarea
+              value={form.notes}
+              onChange={(e) => patch({ notes: e.target.value })}
+              placeholder="Detalles del proyecto, zona del cuerpo, preferencias…"
+              rows={3}
+              className={`${inputCls} resize-none`}
+            />
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div
+              className="px-4 py-3 rounded-xl text-xs"
+              style={{
+                background: "rgba(255,50,50,0.08)",
+                border: "1px solid rgba(255,80,80,0.3)",
+                color: "#f87171",
+              }}
+            >
+              {error}
+            </div>
+          )}
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-lg text-sm font-bold text-muted-foreground border border-border hover:border-primary/50 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={!form.name.trim() || isSubmitting}
+              className="flex-1 py-2.5 rounded-lg text-sm font-bold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              style={{
+                background: "linear-gradient(135deg, #8B00FF, #6A00C8)",
+                boxShadow:  "0 0 20px rgba(139,0,255,0.3)",
+              }}
+            >
+              {isSubmitting && (
+                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+              )}
+              {isSubmitting ? "Guardando…" : "Crear lead"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Lead card ─────────────────────────────────────────────────────────────────
+
+function LeadCard({
+  lead,
+  onOpen,
+  onDragStart,
+}: {
+  lead:        Lead;
+  onOpen:      (l: Lead) => void;
+  onDragStart: (e: React.DragEvent, id: string) => void;
+}) {
+  return (
+    <div
+      draggable
+      onDragStart={(e) => onDragStart(e, lead.id)}
       onClick={() => onOpen(lead)}
-      className="bg-[#0D0010] p-4 rounded-lg border border-border hover:border-primary/60 transition-all cursor-pointer group shadow-card"
+      className="bg-[#0D0010] p-4 rounded-lg border border-border hover:border-primary/60 transition-all cursor-grab group shadow-card select-none"
     >
       <div className="flex justify-between items-start mb-3">
         <div className="flex items-center gap-2">
@@ -292,7 +524,7 @@ function LeadCard({ lead, onOpen }: { lead: Lead; onOpen: (l: Lead) => void }) {
 
       <div className="flex flex-wrap gap-2 mb-3">
         <StyleBadge label={lead.style} />
-        {lead.budget && (
+        {lead.budget !== "—" && (
           <span className="bg-secondary text-muted-foreground text-[10px] px-2 py-1 rounded font-mono">
             {lead.budget}
           </span>
@@ -317,13 +549,24 @@ function KanbanColumn({
   col,
   leads,
   onOpen,
+  onDragStart,
+  onDrop,
 }: {
-  col: (typeof COLUMNS)[number];
-  leads: Lead[];
-  onOpen: (l: Lead) => void;
+  col:         (typeof COLUMNS)[number];
+  leads:       Lead[];
+  onOpen:      (l: Lead) => void;
+  onDragStart: (e: React.DragEvent, id: string) => void;
+  onDrop:      (e: React.DragEvent, status: LeadStatus) => void;
 }) {
+  const [isDragOver, setOver] = useState(false);
+
   return (
-    <div className="flex flex-col shrink-0 w-[300px] h-full">
+    <div
+      className="flex flex-col shrink-0 w-[300px] h-full"
+      onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => { setOver(false); onDrop(e, col.id); }}
+    >
       <div
         className="flex items-center justify-between mb-4 pt-2"
         style={{ borderTop: `4px solid ${col.color}` }}
@@ -342,13 +585,24 @@ function KanbanColumn({
         </button>
       </div>
 
-      <div className="flex-1 space-y-4 overflow-y-auto pr-1" style={{ scrollbarWidth: "thin" }}>
+      <div
+        className={`flex-1 space-y-4 overflow-y-auto pr-1 rounded-lg p-1 transition-colors ${
+          isDragOver ? "bg-primary/5 ring-1 ring-primary/20" : ""
+        }`}
+        style={{ scrollbarWidth: "thin" }}
+      >
         {leads.map((lead) => (
-          <LeadCard key={lead.id} lead={lead} onOpen={onOpen} />
+          <LeadCard key={lead.id} lead={lead} onOpen={onOpen} onDragStart={onDragStart} />
         ))}
         {leads.length === 0 && (
-          <div className="border border-dashed border-border/40 rounded-lg p-6 text-center text-muted-foreground text-xs">
-            Sin leads en esta etapa
+          <div
+            className={`border border-dashed rounded-lg p-6 text-center text-xs transition-colors ${
+              isDragOver
+                ? "border-primary/50 text-primary/70"
+                : "border-border/40 text-muted-foreground"
+            }`}
+          >
+            {isDragOver ? "Soltar aquí" : "Sin leads en esta etapa"}
           </div>
         )}
       </div>
@@ -362,9 +616,7 @@ function LeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
   const statusCol = COLUMNS.find((c) => c.id === lead.status);
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
@@ -375,21 +627,19 @@ function LeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="bg-[#1A0025] border border-border rounded-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
-        {/* Modal header */}
+        {/* Header */}
         <div className="p-6 border-b border-border flex justify-between items-start shrink-0">
           <div className="flex items-center gap-4">
             <Initials text={lead.initials} size="lg" />
             <div>
-              <h2 className="font-playfair text-2xl font-semibold text-foreground">
-                {lead.name}
-              </h2>
+              <h2 className="font-playfair text-2xl font-semibold text-foreground">{lead.name}</h2>
               <div className="flex items-center gap-3 mt-1.5">
                 <span
                   className="text-[10px] px-2 py-0.5 rounded font-mono tracking-wider border"
                   style={{
-                    background: statusCol?.badgeBg,
-                    color: statusCol?.color,
-                    borderColor: `${statusCol?.color}33`,
+                    background:   statusCol?.badgeBg,
+                    color:        statusCol?.color,
+                    borderColor:  `${statusCol?.color}33`,
                   }}
                 >
                   ESTADO: {lead.status.toUpperCase()}
@@ -410,11 +660,10 @@ function LeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
           </button>
         </div>
 
-        {/* Modal body */}
+        {/* Body */}
         <div className="flex-1 overflow-y-auto p-8 grid grid-cols-12 gap-8">
-          {/* Left: contact + project + notes */}
+          {/* Left */}
           <div className="col-span-12 md:col-span-7 space-y-8">
-            {/* Contact */}
             <div>
               <h4 className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase mb-4 border-b border-border pb-2">
                 Datos de Contacto
@@ -439,7 +688,6 @@ function LeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
               </div>
             </div>
 
-            {/* Project */}
             <div>
               <h4 className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase mb-4 border-b border-border pb-2">
                 Detalles del Proyecto
@@ -455,7 +703,7 @@ function LeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                     <p className="font-playfair text-lg font-semibold text-foreground">{lead.bodyZone}</p>
                   </div>
                 )}
-                {lead.budget && (
+                {lead.budget !== "—" && (
                   <div>
                     <p className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase mb-1">Presupuesto estimado</p>
                     <p className="font-mono text-xl font-medium text-primary">{lead.budget}</p>
@@ -473,7 +721,6 @@ function LeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
               </div>
             </div>
 
-            {/* Notes */}
             {lead.notes && (
               <div>
                 <h4 className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase mb-4 border-b border-border pb-2">
@@ -514,7 +761,6 @@ function LeadModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
               ))}
             </div>
 
-            {/* Actions */}
             <div className="mt-8 pt-6 border-t border-border flex flex-col gap-3">
               <button className="w-full bg-primary text-white py-3 rounded-lg font-bold text-sm flex items-center justify-center gap-2 shadow-glow hover:shadow-glow-lg transition-all">
                 <Send className="w-4 h-4" />
@@ -546,16 +792,14 @@ function ListView({ leads, onOpen }: { leads: Lead[]; onOpen: (l: Lead) => void 
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border text-left">
-            {["Lead", "Instagram", "Estilo", "Presupuesto", "Estado", "Artista", "Contacto"].map(
-              (h) => (
-                <th
-                  key={h}
-                  className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase py-3 pr-4"
-                >
-                  {h}
-                </th>
-              )
-            )}
+            {["Lead", "Instagram", "Estilo", "Presupuesto", "Estado", "Artista", "Contacto"].map((h) => (
+              <th
+                key={h}
+                className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase py-3 pr-4"
+              >
+                {h}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -574,10 +818,8 @@ function ListView({ leads, onOpen }: { leads: Lead[]; onOpen: (l: Lead) => void 
                   </div>
                 </td>
                 <td className="py-3 pr-4 text-primary">{lead.instagram}</td>
-                <td className="py-3 pr-4">
-                  <StyleBadge label={lead.style} />
-                </td>
-                <td className="py-3 pr-4 font-mono text-muted-foreground">{lead.budget ?? "—"}</td>
+                <td className="py-3 pr-4"><StyleBadge label={lead.style} /></td>
+                <td className="py-3 pr-4 font-mono text-muted-foreground">{lead.budget}</td>
                 <td className="py-3 pr-4">
                   <span
                     className="text-[10px] px-2 py-0.5 rounded font-mono tracking-wider"
@@ -600,29 +842,101 @@ function ListView({ leads, onOpen }: { leads: Lead[]; onOpen: (l: Lead) => void 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function CrmPage() {
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [view, setView] = useState<"kanban" | "list">("kanban");
-  const [search, setSearch] = useState("");
+  const [leads, setLeads]             = useState<Lead[]>([]);
+  const [isLoading, setLoading]       = useState(true);
+  const [selectedLead, setSelected]   = useState<Lead | null>(null);
+  const [showNewModal, setNewModal]   = useState(false);
+  const [view, setView]               = useState<"kanban" | "list">("kanban");
+  const [search, setSearch]           = useState("");
   const [filterStyle, setFilterStyle] = useState("todos");
 
-  const openLead = useCallback((lead: Lead) => setSelectedLead(lead), []);
-  const closeLead = useCallback(() => setSelectedLead(null), []);
+  // Ref to carry dragged lead ID across drag events without re-rendering
+  const draggingId = useRef<string | null>(null);
 
-  const filteredLeads = LEADS.filter((lead) => {
-    const q = search.toLowerCase();
-    const matchSearch =
-      !q ||
-      lead.name.toLowerCase().includes(q) ||
-      lead.instagram.toLowerCase().includes(q) ||
-      lead.style.toLowerCase().includes(q);
-    const matchStyle = filterStyle === "todos" || lead.style === filterStyle;
+  // ── Fetch leads on mount ──
+  useEffect(() => {
+    (async () => {
+      try {
+        const res  = await fetch("/api/leads");
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error);
+        setLeads((json.leads as DbLead[]).map(dbToUiLead));
+      } catch (err) {
+        console.error("[CRM] fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const openLead  = useCallback((lead: Lead) => setSelected(lead), []);
+  const closeLead = useCallback(() => setSelected(null), []);
+
+  // ── Drag-and-drop ──
+  const handleDragStart = useCallback((e: React.DragEvent, id: string) => {
+    draggingId.current            = id;
+    e.dataTransfer.effectAllowed  = "move";
+    e.dataTransfer.setData("text/plain", id); // required for Firefox
+  }, []);
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent, targetStatus: LeadStatus) => {
+      e.preventDefault();
+      const id = draggingId.current ?? e.dataTransfer.getData("text/plain");
+      draggingId.current = null;
+      if (!id) return;
+
+      setLeads((prev) => {
+        const lead = prev.find((l) => l.id === id);
+        if (!lead || lead.status === targetStatus) return prev;
+        return prev.map((l) => (l.id === id ? { ...l, status: targetStatus } : l));
+      });
+
+      // Persist status change — fire-and-forget with silent revert on error
+      try {
+        const res = await fetch("/api/leads", {
+          method:  "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ id, status: targetStatus }),
+        });
+        if (!res.ok) {
+          const json = await res.json();
+          throw new Error(json.error);
+        }
+      } catch (err) {
+        console.error("[CRM] patch error:", err);
+        // Revert to the previous status by re-fetching
+        const res  = await fetch("/api/leads");
+        const json = await res.json();
+        if (res.ok) setLeads((json.leads as DbLead[]).map(dbToUiLead));
+      }
+    },
+    []
+  );
+
+  const handleLeadCreated = useCallback((lead: Lead) => {
+    setLeads((prev) => [lead, ...prev]);
+  }, []);
+
+  // ── Filtering ──
+  const filteredLeads = leads.filter((lead) => {
+    const q           = search.toLowerCase();
+    const matchSearch = !q
+      || lead.name.toLowerCase().includes(q)
+      || lead.instagram.toLowerCase().includes(q)
+      || lead.style.toLowerCase().includes(q);
+    const matchStyle  = filterStyle === "todos" || lead.style === filterStyle;
     return matchSearch && matchStyle;
   });
 
   const leadsForColumn = (status: LeadStatus) =>
     filteredLeads.filter((l) => l.status === status);
 
-  const allStyles = Array.from(new Set(LEADS.map((l) => l.style))).sort();
+  const allStyles = Array.from(
+    new Set(leads.map((l) => l.style).filter((s) => s !== "—"))
+  ).sort();
+
+  const showEmpty = !isLoading && leads.length === 0;
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
@@ -632,10 +946,15 @@ export default function CrmPage() {
           <div>
             <h2 className="font-playfair text-4xl font-bold text-foreground">CRM de Leads</h2>
             <p className="text-muted-foreground text-sm mt-1">
-              {filteredLeads.length} leads activos en tu pipeline
+              {isLoading
+                ? "Cargando leads…"
+                : `${filteredLeads.length} leads activos en tu pipeline`}
             </p>
           </div>
-          <button className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-lg font-bold text-sm shadow-glow hover:shadow-glow-lg transition-all">
+          <button
+            onClick={() => setNewModal(true)}
+            className="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-lg font-bold text-sm shadow-glow hover:shadow-glow-lg transition-all"
+          >
             <Plus className="w-4 h-4" />+ Nuevo lead
           </button>
         </div>
@@ -659,7 +978,6 @@ export default function CrmPage() {
             <div className="relative">
               <select className="bg-[#1A0025] border border-border rounded-lg px-4 py-2 text-sm text-foreground focus:border-primary outline-none appearance-none pr-8 cursor-pointer">
                 <option>Todos los artistas</option>
-                <option>Matías López</option>
               </select>
               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             </div>
@@ -693,9 +1011,7 @@ export default function CrmPage() {
             <button
               onClick={() => setView("kanban")}
               className={`px-4 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-                view === "kanban"
-                  ? "bg-secondary text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                view === "kanban" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <LayoutGrid className="w-4 h-4" />
@@ -704,9 +1020,7 @@ export default function CrmPage() {
             <button
               onClick={() => setView("list")}
               className={`px-4 py-1.5 rounded text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-                view === "list"
-                  ? "bg-secondary text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                view === "list" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <List className="w-4 h-4" />
@@ -716,8 +1030,14 @@ export default function CrmPage() {
         </div>
       </header>
 
-      {/* ── Kanban / List ── */}
-      {view === "kanban" ? (
+      {/* ── Main content ── */}
+      {isLoading ? (
+        <section className="flex-1 overflow-x-auto overflow-y-hidden px-10 pb-8 pt-6">
+          <KanbanSkeleton />
+        </section>
+      ) : showEmpty ? (
+        <EmptyState onAdd={() => setNewModal(true)} />
+      ) : view === "kanban" ? (
         <section className="flex-1 overflow-x-auto overflow-y-hidden px-10 pb-8 pt-6">
           <div className="flex gap-5 h-full" style={{ minWidth: "max-content" }}>
             {COLUMNS.map((col) => (
@@ -726,6 +1046,8 @@ export default function CrmPage() {
                 col={col}
                 leads={leadsForColumn(col.id)}
                 onOpen={openLead}
+                onDragStart={handleDragStart}
+                onDrop={handleDrop}
               />
             ))}
           </div>
@@ -734,8 +1056,14 @@ export default function CrmPage() {
         <ListView leads={filteredLeads} onOpen={openLead} />
       )}
 
-      {/* ── Modal ── */}
+      {/* ── Modals ── */}
       {selectedLead && <LeadModal lead={selectedLead} onClose={closeLead} />}
+      {showNewModal  && (
+        <NewLeadModal
+          onClose={() => setNewModal(false)}
+          onCreated={handleLeadCreated}
+        />
+      )}
     </div>
   );
 }
