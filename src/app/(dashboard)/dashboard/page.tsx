@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 import {
   Plus, CalendarPlus, Zap, PenLine, Bell, ArrowRight,
-  Calendar, Sparkles,
+  Calendar, Sparkles, UserPlus,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -117,6 +117,13 @@ export default function DashboardPage() {
   const tokensPct = Math.min(100, Math.round((tokens / tokensMax) * 100));
 
   const businessName = data?.business_name ?? "Mi Estudio";
+
+  const isNewUser =
+    !loading &&
+    !error &&
+    data !== null &&
+    data.leads_this_month === 0 &&
+    data.pipeline.every((col) => col.count === 0);
 
   return (
     <div className="p-10 max-w-[1400px] mx-auto">
@@ -350,47 +357,112 @@ export default function DashboardPage() {
         </section>
       </div>
 
-      {/* ── AI Recommendation Card ── */}
-      <section
-        className="relative bg-card border border-primary/40 rounded-xl p-8 overflow-hidden"
-        style={{ boxShadow: "0 0 40px rgba(139,0,255,0.15)" }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent pointer-events-none" />
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <h5 className="font-playfair text-xl font-semibold text-foreground">
-                Recomendación de TattooVision AI
-              </h5>
+      {/* ── Bottom card: onboarding tips for new users / AI card for active users ── */}
+      {isNewUser ? (
+        <section
+          className="bg-card border border-border rounded-xl p-8"
+        >
+          <div className="flex items-center gap-2 mb-6">
+            <UserPlus className="w-5 h-5 text-primary" />
+            <h5 className="font-playfair text-xl font-semibold text-foreground">
+              Primeros pasos
+            </h5>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                step: 1,
+                title: "Agrega tu primer lead",
+                desc: "Registra un prospecto del CRM para empezar a gestionar tus clientes.",
+                href: "/crm",
+                cta: "Ir al CRM",
+              },
+              {
+                step: 2,
+                title: "Agenda una cita",
+                desc: "Organiza tus sesiones y evita huecos en tu calendario.",
+                href: "/agenda",
+                cta: "Ver agenda",
+              },
+              {
+                step: 3,
+                title: "Crea contenido con IA",
+                desc: "Genera reels, historias y posts optimizados para tu estudio.",
+                href: "/contenido",
+                cta: "Generar contenido",
+              },
+              {
+                step: 4,
+                title: "Lanza tu primera campaña",
+                desc: "Conecta Meta Ads y lanza anuncios dirigidos a tu audiencia ideal.",
+                href: "/campanas",
+                cta: "Ver campañas",
+              },
+            ].map(({ step, title, desc, href, cta }) => (
+              <div
+                key={step}
+                className="flex flex-col gap-3 p-5 rounded-lg border border-border/60 hover:border-primary/40 transition-colors"
+                style={{ background: "rgba(26,0,37,0.4)" }}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                    style={{ background: "rgba(139,0,255,0.15)", color: "#C084FC", border: "1px solid rgba(139,0,255,0.3)" }}
+                  >
+                    {step}
+                  </span>
+                  <p className="font-semibold text-sm text-foreground">{title}</p>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed flex-1">{desc}</p>
+                <Link href={href} className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
+                  {cta} <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <section
+          className="relative bg-card border border-primary/40 rounded-xl p-8 overflow-hidden"
+          style={{ boxShadow: "0 0 40px rgba(139,0,255,0.15)" }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent pointer-events-none" />
+          <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8">
+            <div className="flex-1 space-y-4">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                <h5 className="font-playfair text-xl font-semibold text-foreground">
+                  Recomendación de TattooVision AI
+                </h5>
+              </div>
+              <p className="text-muted-foreground leading-relaxed">
+                Revisa tu{" "}
+                <Link href="/crm" className="text-primary font-bold hover:underline">
+                  pipeline de leads
+                </Link>{" "}
+                y lanza una campaña de reactivación para leads sin respuesta hace más de 48 horas.
+                Una automatización puede aumentar tu tasa de conversión en un{" "}
+                <span className="text-[#C084FC] font-bold">15%</span> esta semana.
+              </p>
+              <div className="flex flex-wrap gap-4 pt-2">
+                <Link href="/campanas">
+                  <button className="bg-primary text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-glow hover:shadow-glow-lg transition-all flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" /> Generar campaña con IA
+                  </button>
+                </Link>
+                <Link href="/crm">
+                  <button className="border border-border bg-transparent text-primary px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-primary/10 transition-all">
+                    Ver leads sin respuesta
+                  </button>
+                </Link>
+              </div>
             </div>
-            <p className="text-muted-foreground leading-relaxed">
-              Revisa tu{" "}
-              <Link href="/crm" className="text-primary font-bold hover:underline">
-                pipeline de leads
-              </Link>{" "}
-              y lanza una campaña de reactivación para leads sin respuesta hace más de 48 horas.
-              Una automatización puede aumentar tu tasa de conversión en un{" "}
-              <span className="text-[#C084FC] font-bold">15%</span> esta semana.
-            </p>
-            <div className="flex flex-wrap gap-4 pt-2">
-              <Link href="/campanas">
-                <button className="bg-primary text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-glow hover:shadow-glow-lg transition-all flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" /> Generar campaña con IA
-                </button>
-              </Link>
-              <Link href="/crm">
-                <button className="border border-border bg-transparent text-primary px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-primary/10 transition-all">
-                  Ver leads sin respuesta
-                </button>
-              </Link>
+            <div className="hidden lg:flex w-56 h-56 shrink-0 items-center justify-center opacity-40">
+              <AiOrb />
             </div>
           </div>
-          <div className="hidden lg:flex w-56 h-56 shrink-0 items-center justify-center opacity-40">
-            <AiOrb />
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ── Footer ── */}
       <footer className="mt-8 border-t border-border py-8 flex flex-col md:flex-row justify-between items-center text-muted-foreground text-sm">

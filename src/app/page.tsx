@@ -171,7 +171,7 @@ function Hero() {
           improvisar campañas.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
+        <div className="flex justify-center mb-4">
           <Link
             href="/sign-up"
             className="bg-primary text-white px-8 py-4 rounded-lg font-sans font-bold text-base transition-shadow hover:shadow-glow active:scale-95 inline-flex items-center justify-center gap-2"
@@ -179,9 +179,6 @@ function Hero() {
             Empieza gratis
             <ChevronRight size={18} />
           </Link>
-          <button className="border border-border text-foreground px-8 py-4 rounded-lg font-sans font-bold text-base hover:border-primary transition-colors">
-            Ver demo
-          </button>
         </div>
 
         <p className="font-mono text-xs text-muted-foreground mb-12">

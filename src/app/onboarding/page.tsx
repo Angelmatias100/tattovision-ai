@@ -4,23 +4,25 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Check, AtSign, ToggleLeft, ToggleRight,
-  Building2, MapPin,
+  Building2, MapPin, User,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface FormData {
-  // Step 1
+  // Step 1 — business type
+  businessType: "independiente" | "estudio" | "";
+  // Step 2
   studioName: string;
   city: string;
   country: string;
-  // Step 2
+  // Step 3
   styles: string[];
   avgTicket: string;
-  // Step 3
+  // Step 4
   citasPerMonth: number;
   mainProblem: string;
-  // Step 4
+  // Step 5
   instagram: string;
   hasMeta: boolean;
 }
@@ -46,6 +48,7 @@ const PROBLEMS = [
 ];
 
 const STEP_LABELS = [
+  "Tipo",
   "Negocio",
   "Especialidad",
   "Objetivo",
@@ -205,9 +208,92 @@ function NextButton({ onClick, label = "Siguiente →", disabled = false, loadin
   );
 }
 
-// ── Step 1 ────────────────────────────────────────────────────────────────────
+// ── Step 1 — Business type ────────────────────────────────────────────────────
+
+const BUSINESS_TYPES = [
+  {
+    value:    "independiente" as const,
+    label:    "Tatuador independiente",
+    subtitle: "Trabajo solo o en espacio compartido",
+    Icon:     User,
+  },
+  {
+    value:    "estudio" as const,
+    label:    "Estudio de tatuaje",
+    subtitle: "Tengo uno o más artistas en mi equipo",
+    Icon:     Building2,
+  },
+];
 
 function Step1({
+  value,
+  onChange,
+  onNext,
+}: {
+  value: FormData["businessType"];
+  onChange: (v: "independiente" | "estudio") => void;
+  onNext: () => void;
+}) {
+  return (
+    <div>
+      <StepHeading
+        title="¿Cómo describes tu negocio?"
+        subtitle="Esto nos ayuda a personalizar la plataforma para ti."
+      />
+      <div className="space-y-4">
+        {BUSINESS_TYPES.map(({ value: opt, label, subtitle, Icon }) => {
+          const selected = value === opt;
+          return (
+            <button
+              key={opt}
+              onClick={() => onChange(opt)}
+              className="w-full flex items-center gap-5 px-6 py-5 rounded-xl text-left transition-all duration-150"
+              style={{
+                background: selected ? "rgba(139,0,255,0.12)" : "rgba(26,0,37,0.8)",
+                border: `1px solid ${selected ? "rgba(139,0,255,0.5)" : "rgba(45,0,80,0.6)"}`,
+                boxShadow: selected ? "0 0 14px rgba(139,0,255,0.15)" : "none",
+              }}
+            >
+              <div
+                className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: selected ? "rgba(139,0,255,0.2)" : "rgba(45,0,80,0.3)" }}
+              >
+                <Icon
+                  className="w-6 h-6"
+                  style={{ color: selected ? "#C084FC" : "#4a3060" }}
+                />
+              </div>
+              <div className="flex-1">
+                <p
+                  className="font-bold text-sm"
+                  style={{ color: selected ? "#C084FC" : "#988ca2" }}
+                >
+                  {label}
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: "#4a3060" }}>
+                  {subtitle}
+                </p>
+              </div>
+              {selected && (
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: "#8B00FF" }}
+                >
+                  <Check className="w-3 h-3 text-white" />
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+      <NextButton onClick={onNext} disabled={!value} />
+    </div>
+  );
+}
+
+// ── Step 2 — Studio info ──────────────────────────────────────────────────────
+
+function Step2({
   data,
   onChange,
   onNext,
@@ -267,9 +353,9 @@ function Step1({
   );
 }
 
-// ── Step 2 ────────────────────────────────────────────────────────────────────
+// ── Step 3 ────────────────────────────────────────────────────────────────────
 
-function Step2({
+function Step3({
   data,
   onChange,
   onNext,
@@ -354,9 +440,9 @@ function Step2({
   );
 }
 
-// ── Step 3 ────────────────────────────────────────────────────────────────────
+// ── Step 4 ────────────────────────────────────────────────────────────────────
 
-function Step3({
+function Step4({
   data,
   onChange,
   onNext,
@@ -437,9 +523,9 @@ function Step3({
   );
 }
 
-// ── Step 4 ────────────────────────────────────────────────────────────────────
+// ── Step 5 ────────────────────────────────────────────────────────────────────
 
-function Step4({
+function Step5({
   data,
   onChange,
   onNext,
@@ -519,9 +605,9 @@ function Step4({
   );
 }
 
-// ── Step 5 ────────────────────────────────────────────────────────────────────
+// ── Step 6 ────────────────────────────────────────────────────────────────────
 
-function Step5({
+function Step6({
   data,
   onFinish,
   isLoading = false,
@@ -621,6 +707,7 @@ function Step5({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 const INITIAL: FormData = {
+  businessType: "",
   studioName: "",
   city: "",
   country: "Chile",
@@ -632,7 +719,7 @@ const INITIAL: FormData = {
   hasMeta: false,
 };
 
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -653,6 +740,7 @@ export default function OnboardingPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          businessType:  data.businessType,
           studioName:    data.studioName,
           city:          data.city,
           country:       data.country,
@@ -707,12 +795,19 @@ export default function OnboardingPage() {
           }}
         >
 
-          {step === 1 && <Step1 data={data} onChange={patch} onNext={next} />}
+          {step === 1 && (
+            <Step1
+              value={data.businessType}
+              onChange={(v) => patch({ businessType: v })}
+              onNext={next}
+            />
+          )}
           {step === 2 && <Step2 data={data} onChange={patch} onNext={next} />}
           {step === 3 && <Step3 data={data} onChange={patch} onNext={next} />}
           {step === 4 && <Step4 data={data} onChange={patch} onNext={next} />}
-          {step === 5 && (
-            <Step5
+          {step === 5 && <Step5 data={data} onChange={patch} onNext={next} />}
+          {step === 6 && (
+            <Step6
               data={data}
               onFinish={handleFinish}
               isLoading={isLoading}

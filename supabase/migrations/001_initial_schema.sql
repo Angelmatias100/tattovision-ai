@@ -52,6 +52,8 @@ CREATE TABLE IF NOT EXISTS businesses (
   avg_ticket           NUMERIC(10,2),
   monthly_goal         NUMERIC(10,2),
   instagram_url        TEXT,
+  business_type        TEXT
+                         CHECK (business_type IN ('independiente', 'estudio')),
   meta_account_id      TEXT,
   meta_access_token    TEXT,                                 -- encrypted at rest via Vault in prod
   plan                 TEXT        NOT NULL DEFAULT 'free'

@@ -229,12 +229,12 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
       >
         <UserRound className="w-9 h-9" style={{ color: "#8B00FF" }} />
       </div>
-      <div className="text-center">
-        <h3 className="font-playfair text-2xl font-bold text-foreground mb-2">
-          No tienes leads aún
+      <div className="text-center max-w-sm">
+        <h3 className="font-playfair text-2xl font-bold text-foreground mb-3">
+          Aún no tienes leads
         </h3>
-        <p className="text-muted-foreground text-sm">
-          Agrega tu primer lead para empezar
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          Agrega tu primer lead para empezar a gestionar tus clientes.
         </p>
       </div>
       <button
@@ -246,7 +246,7 @@ function EmptyState({ onAdd }: { onAdd: () => void }) {
         }}
       >
         <Plus className="w-4 h-4" />
-        Agregar lead
+        + Agregar primer lead
       </button>
     </div>
   );

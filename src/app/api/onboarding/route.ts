@@ -13,6 +13,7 @@ export async function POST(req: NextRequest) {
 
   // 2. Parse body
   let body: {
+    businessType?: string
     studioName?: string
     city?: string
     country?: string
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { studioName, city, country, styles, avgTicket, citasPerMonth, instagram } = body
+  const { businessType, studioName, city, country, styles, avgTicket, citasPerMonth, instagram } = body
 
   // 3. Validate required fields
   if (!studioName?.trim()) {
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
       {
         user_id:              userId,
         name:                 studioName.trim(),
+        business_type:        businessType || null,
         city:                 city?.trim()    || null,
         country:              country?.trim() || null,
         styles:               styles          ?? [],
