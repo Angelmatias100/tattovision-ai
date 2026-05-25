@@ -55,35 +55,41 @@ export async function POST(req: NextRequest) {
   const resetDateStr = resetDate.toISOString().split('T')[0]
 
   // 5. Upsert into businesses using the service-role admin client (bypasses RLS)
-  const supabase = createAdminClient()
+  try {
+    const supabase = createAdminClient()
 
-  const { data, error } = await supabase
-    .from('businesses')
-    .upsert(
-      {
-        user_id:              userId,
-        name:                 studioName.trim(),
-        business_type:        businessType || null,
-        city:                 city?.trim()    || null,
-        country:              country?.trim() || null,
-        styles:               styles          ?? [],
-        artists_count:        1,
-        avg_ticket:           avgTicketNum,
-        monthly_goal:         monthlyGoal,
-        instagram_url:        instagramUrl,
-        plan:                 'starter',
-        tv_tokens_balance:    200,
-        tv_tokens_reset_date: resetDateStr,
-      },
-      { onConflict: 'user_id' }  // idempotent — re-running onboarding just updates
-    )
-    .select()
-    .single()
+    const { data, error } = await supabase
+      .from('businesses')
+      .upsert(
+        {
+          user_id:              userId,
+          name:                 studioName.trim(),
+          business_type:        businessType || null,
+          city:                 city?.trim()    || null,
+          country:              country?.trim() || null,
+          styles:               styles          ?? [],
+          artists_count:        1,
+          avg_ticket:           avgTicketNum,
+          monthly_goal:         monthlyGoal,
+          instagram_url:        instagramUrl,
+          plan:                 'starter',
+          tv_tokens_balance:    200,
+          tv_tokens_reset_date: resetDateStr,
+        },
+        { onConflict: 'user_id' }  // idempotent — re-running onboarding just updates
+      )
+      .select()
+      .single()
 
-  if (error) {
-    console.error('[POST /api/onboarding] Supabase error:', error.message)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) {
+      console.error('[POST /api/onboarding] Supabase error:', error.message)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ ok: true, business: data }, { status: 200 })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Error interno del servidor'
+    console.error('[POST /api/onboarding] Unexpected error:', msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
-
-  return NextResponse.json({ ok: true, business: data }, { status: 200 })
 }

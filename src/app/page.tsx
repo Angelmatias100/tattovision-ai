@@ -25,9 +25,6 @@ function Navbar() {
           <a href="#pricing" className="text-muted-foreground hover:text-primary transition-colors text-sm">
             Precios
           </a>
-          <a href="#testimonios" className="text-muted-foreground hover:text-primary transition-colors text-sm">
-            Testimonios
-          </a>
         </div>
 
         <div className="flex items-center gap-3">
@@ -289,70 +286,6 @@ function Features() {
                 <p className="font-sans text-base text-muted-foreground leading-relaxed">
                   {body}
                 </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ── Testimonials ──────────────────────────────────────────────
-const testimonials = [
-  {
-    quote:
-      "Desde que usamos la IA para los anuncios, mi agenda está llena con 3 semanas de antelación. Ya no pierdo tiempo en Instagram.",
-    name: "Carlos Méndez",
-    role: "Founder, Ink Soul Studio",
-    initials: "CM",
-  },
-  {
-    quote:
-      "El CRM es brutal. Puedo ver exactamente quién está listo para reservar y quién necesita un empujón. Un cambio total de juego.",
-    name: "Lucía Ferrán",
-    role: "Manager, Art Line Collective",
-    initials: "LF",
-  },
-  {
-    quote:
-      "Pasamos de improvisar a tener un sistema predecible. Lo mejor es que la IA escribe los copies por mí.",
-    name: "Javier Roca",
-    role: "Senior Artist, Black Ink",
-    initials: "JR",
-  },
-];
-
-function Testimonials() {
-  return (
-    <section id="testimonios" className="py-16 md:py-24 bg-tv-surface/30 px-5 md:px-10">
-      <div className="max-w-[1440px] mx-auto text-center">
-        <p className="font-sans text-lg text-foreground mb-12">
-          Más de 200 estudios ya usan TattooVision
-        </p>
-        <div className="grid md:grid-cols-3 gap-6">
-          {testimonials.map(({ quote, name, role, initials }) => (
-            <div
-              key={name}
-              className="p-8 bg-black/40 border border-border rounded-xl text-left"
-            >
-              <p className="font-sans italic text-muted-foreground mb-6 leading-relaxed">
-                &ldquo;{quote}&rdquo;
-              </p>
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full border border-primary bg-tv-elevated flex items-center justify-center shrink-0">
-                  <span className="font-mono text-xs text-primary font-bold">
-                    {initials}
-                  </span>
-                </div>
-                <div>
-                  <p className="font-sans font-bold text-foreground text-sm">
-                    {name}
-                  </p>
-                  <p className="font-sans text-xs text-tv-lavender/70">
-                    {role}
-                  </p>
-                </div>
               </div>
             </div>
           ))}
@@ -634,7 +567,6 @@ export default function LandingPage() {
         <Hero />
         <PainPoints />
         <Features />
-        <Testimonials />
         <Pricing />
         <FinalCTA />
       </main>

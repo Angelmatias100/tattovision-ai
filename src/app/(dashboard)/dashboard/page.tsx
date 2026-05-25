@@ -176,8 +176,13 @@ export default function DashboardPage() {
 
       {/* ── Error banner ── */}
       {error && (
-        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive">
-          {error}
+        <div className="mb-6 p-4 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive flex items-center justify-between gap-4">
+          <span>{error}</span>
+          {error.includes("onboarding") && (
+            <Link href="/onboarding" className="shrink-0 font-bold underline">
+              Completar onboarding →
+            </Link>
+          )}
         </div>
       )}
 
@@ -185,27 +190,27 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <MetricCard
           label="Leads este mes"
-          value={loading ? "—" : String(data!.leads_this_month)}
-          badge={loading ? "" : undefined}
+          value={loading || !data ? "—" : String(data.leads_this_month)}
+          badge={loading || !data ? "" : undefined}
         />
         <MetricCard
           label="Citas hoy"
-          value={loading ? "—" : String(data!.appointments_today)}
-          badge={loading ? "" : undefined}
+          value={loading || !data ? "—" : String(data.appointments_today)}
+          badge={loading || !data ? "" : undefined}
         />
         <MetricCard
           label="Pipeline"
-          value={loading ? "—" : `$${Math.round(data!.pipeline_value).toLocaleString("es-CL")}`}
+          value={loading || !data ? "—" : `$${Math.round(data.pipeline_value).toLocaleString("es-CL")}`}
           badge="Valor activo"
           badgeVariant="neutral"
         />
         <MetricCard
           label="TV Tokens"
-          value={loading ? "—" : `${tokens}/${tokensMax}`}
-          badge={loading ? "" : `${tokensPct}%`}
+          value={loading || !data ? "—" : `${tokens}/${tokensMax}`}
+          badge={loading || !data ? "" : `${tokensPct}%`}
           badgeVariant="neutral"
         >
-          {!loading && (
+          {!loading && data && (
             <div className="mt-3 w-full h-2 bg-border rounded-full overflow-hidden">
               <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${tokensPct}%` }} />
             </div>
