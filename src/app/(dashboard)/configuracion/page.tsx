@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePlan } from "@/components/shared/PlanContext";
 import {
   Building2, Users, Link2, CreditCard, Plus, Check, X,
   ToggleLeft, ToggleRight, Eye, EyeOff, Zap,
@@ -467,20 +468,28 @@ function TabIntegraciones() {
 // ── Tab: Plan ─────────────────────────────────────────────────────────────────
 
 function TabPlan() {
-  const TOKEN_USED = 147;
-  const TOKEN_MAX  = 200;  // Starter plan limit
-  const tokenPct   = Math.min((TOKEN_USED / TOKEN_MAX) * 100, 100);
+  const { plan: currentPlan, tokensBalance, tokensLimit, tokensResetDate, loading } = usePlan();
 
-  // Current plan index — 0 = Starter, 1 = Pro, 2 = Agency
-  const currentIdx = PLAN_OPTIONS.findIndex((p) => p.current);
+  const tokenPct    = tokensLimit > 0 ? Math.min((tokensBalance / tokensLimit) * 100, 100) : 0;
+  const currentIdx  = PLAN_OPTIONS.findIndex((p) => p.id === currentPlan);
+  const effectiveIdx = currentIdx >= 0 ? currentIdx : 0;
+
+  const planName    = PLAN_OPTIONS[effectiveIdx]?.name ?? "Starter";
+  const remaining   = Math.max(tokensLimit - tokensBalance, 0);
+
+  let renewLabel = "Se renuevan mensualmente";
+  if (tokensResetDate) {
+    const reset = new Date(tokensResetDate);
+    renewLabel = `Se renuevan el ${reset.toLocaleDateString("es-CL", { day: "numeric", month: "long" })}`;
+  }
 
   return (
     <div className="space-y-8 max-w-3xl">
       {/* Plan cards */}
       <div className="grid grid-cols-3 gap-4">
         {PLAN_OPTIONS.map((plan, i) => {
-          const isCurrent = plan.current;
-          const isUpgrade = i > currentIdx;
+          const isCurrent = plan.id === currentPlan || (currentIdx < 0 && i === 0);
+          const isUpgrade = i > effectiveIdx;
 
           let btnLabel = "";
           let btnStyle: React.CSSProperties = {};
@@ -488,10 +497,10 @@ function TabPlan() {
             btnLabel = "Plan actual";
             btnStyle = { background: "rgba(45,0,80,0.3)", color: "#4a3060", borderColor: "rgba(45,0,80,0.4)", cursor: "not-allowed" };
           } else if (isUpgrade) {
-            btnLabel = "Actualizar";
+            btnLabel = "Mejorar plan";
             btnStyle = { background: "rgba(139,0,255,0.12)", color: "#C084FC", borderColor: "rgba(139,0,255,0.4)" };
           } else {
-            btnLabel = "Downgrade";
+            btnLabel = "Bajar plan";
             btnStyle = { background: "rgba(255,255,255,0.03)", color: "#988ca2", borderColor: "rgba(255,255,255,0.1)" };
           }
 
@@ -500,8 +509,8 @@ function TabPlan() {
               key={plan.id}
               className="rounded-xl border p-5 flex flex-col gap-4 transition-all duration-200"
               style={{
-                background:  isCurrent ? "rgba(139,0,255,0.1)"          : "rgba(26,0,37,0.7)",
-                borderColor: isCurrent ? "rgba(139,0,255,0.5)"          : "rgba(45,0,80,0.6)",
+                background:  isCurrent ? "rgba(139,0,255,0.1)"           : "rgba(26,0,37,0.7)",
+                borderColor: isCurrent ? "rgba(139,0,255,0.5)"           : "rgba(45,0,80,0.6)",
                 boxShadow:   isCurrent ? "0 0 30px rgba(139,0,255,0.12)" : "none",
               }}
             >
@@ -568,22 +577,22 @@ function TabPlan() {
             <span className="text-sm font-bold text-foreground">TV Tokens este mes</span>
           </div>
           <span className="text-sm font-mono text-foreground">
-            <span className="text-primary font-bold">{TOKEN_USED}</span>
-            <span className="text-muted-foreground"> / {TOKEN_MAX}</span>
+            <span className="text-primary font-bold">{loading ? "—" : tokensBalance}</span>
+            <span className="text-muted-foreground"> / {loading ? "—" : tokensLimit}</span>
           </span>
         </div>
         <div className="h-3 rounded-full overflow-hidden" style={{ background: "rgba(45,0,80,0.6)" }}>
           <div
             className="h-full rounded-full transition-all duration-700"
             style={{
-              width: `${tokenPct}%`,
+              width: loading ? "0%" : `${tokenPct}%`,
               background: "linear-gradient(90deg, #8B00FF, #C084FC)",
               boxShadow: "0 0 8px rgba(139,0,255,0.5)",
             }}
           />
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          {TOKEN_MAX - TOKEN_USED} tokens restantes en tu plan Starter. Se renuevan el 1 de junio.
+          {loading ? "Cargando…" : `${remaining} tokens restantes en tu plan ${planName}. ${renewLabel}.`}
         </p>
       </SectionCard>
 

@@ -3,10 +3,10 @@ import { auth } from '@clerk/nextjs/server'
 import { createAdminClient } from '@/lib/supabase/server'
 
 const TOKEN_LIMITS: Record<string, number> = {
-  free:    500,
-  starter: 2000,
-  pro:     8000,
-  agency:  30000,
+  free:    200,
+  starter: 200,
+  pro:     600,
+  agency:  2000,
 }
 
 // The 4 columns shown in the dashboard pipeline mini-widget
@@ -43,7 +43,7 @@ export async function GET() {
 
     const { data: biz, error: bizErr } = await supabase
       .from('businesses')
-      .select('id, name, plan, tv_tokens_balance')
+      .select('id, name, plan, tv_tokens_balance, tv_tokens_reset_date')
       .eq('user_id', userId)
       .single()
 
@@ -109,10 +109,11 @@ export async function GET() {
     }))
 
     return NextResponse.json({
-      business_name:      biz.name as string,
-      plan:               biz.plan as string ?? 'starter',
-      tv_tokens_balance:  biz.tv_tokens_balance ?? 0,
-      tv_tokens_limit:    TOKEN_LIMITS[biz.plan as string] ?? 500,
+      business_name:         biz.name as string,
+      plan:                  (biz.plan as string) ?? 'starter',
+      tv_tokens_balance:     biz.tv_tokens_balance ?? 0,
+      tv_tokens_limit:       TOKEN_LIMITS[(biz.plan as string)] ?? 200,
+      tv_tokens_reset_date:  (biz.tv_tokens_reset_date as string | null) ?? null,
       leads_this_month:   leadsCountRes.count ?? 0,
       appointments_today: (apptTodayRes.data ?? []).length,
       pipeline_value:     pipelineValue,
