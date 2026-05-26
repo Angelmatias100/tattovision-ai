@@ -5,6 +5,9 @@ import {
   MessageCircle, Clock, CreditCard, CalendarCheck, Star, RefreshCw,
   CheckCircle, XCircle, Zap, ToggleLeft, ToggleRight,
 } from "lucide-react";
+import { usePlan } from "@/components/shared/PlanContext";
+import { isPaidPlan } from "@/lib/plan";
+import UpgradeModal from "@/components/shared/UpgradeModal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -207,24 +210,29 @@ function StatusBadge({ status }: { status: "enviado" | "fallido" }) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AutomatizacionesPage() {
-  const [automations, setAutomations] = useState<Automation[]>(INITIAL_AUTOMATIONS);
+  const [automations,  setAutomations]  = useState<Automation[]>(INITIAL_AUTOMATIONS);
+  const [upgradeOpen,  setUpgradeOpen]  = useState(false);
+  const { plan } = usePlan();
 
   const activeCount = automations.filter((a) => a.active).length;
   const allActive = activeCount === automations.length;
 
   const toggle = (id: string) => {
+    if (!isPaidPlan(plan)) { setUpgradeOpen(true); return; }
     setAutomations((prev) =>
       prev.map((a) => (a.id === id ? { ...a, active: !a.active } : a))
     );
   };
 
   const toggleAll = () => {
+    if (!isPaidPlan(plan)) { setUpgradeOpen(true); return; }
     const next = !allActive;
     setAutomations((prev) => prev.map((a) => ({ ...a, active: next })));
   };
 
   return (
     <div className="p-10 max-w-[1200px] mx-auto">
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
       {/* ── Header ── */}
       <header className="flex justify-between items-end mb-8">
         <div>

@@ -6,6 +6,9 @@ import {
   PenLine, Plus, CalendarPlus, Zap, Filter, Trash2, LayoutGrid,
   Clock, CheckCircle, Globe, Search, ChevronDown, AlertCircle, Check,
 } from "lucide-react";
+import { usePlan } from "@/components/shared/PlanContext";
+import { isPaidPlan } from "@/lib/plan";
+import UpgradeModal from "@/components/shared/UpgradeModal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -139,7 +142,8 @@ function ArtPlaceholder({ variant }: { variant: 1 | 2 }) {
 
 // ── Tab: Ideas ────────────────────────────────────────────────────────────────
 
-function TabIdeas({ onIdeaSaved }: { onIdeaSaved: () => void }) {
+function TabIdeas({ onIdeaSaved, onUpgrade }: { onIdeaSaved: () => void; onUpgrade: () => void }) {
+  const { plan } = usePlan();
   const [selectedType,      setSelectedType]      = useState<ContentType>("reel");
   const [selectedObjective, setSelectedObjective] = useState<Objective>("antesdespues");
   const [generating,        setGenerating]        = useState(false);
@@ -249,7 +253,9 @@ function TabIdeas({ onIdeaSaved }: { onIdeaSaved: () => void }) {
               </div>
             </div>
             <div className="flex items-center gap-4 pt-2">
-              <button onClick={handleGenerate} disabled={generating}
+              <button
+                onClick={() => { if (!isPaidPlan(plan)) { onUpgrade(); return; } handleGenerate(); }}
+                disabled={generating}
                 className="bg-primary text-white px-8 py-4 rounded-xl font-bold flex items-center gap-3 shadow-glow hover:shadow-glow-lg transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed">
                 {generating
                   ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Generando…</>
@@ -357,7 +363,7 @@ function TabIdeas({ onIdeaSaved }: { onIdeaSaved: () => void }) {
               <p className="text-sm text-muted-foreground font-mono">Muestra la esterilización y el set up de hoy para generar confianza absoluta en tu cliente.</p>
             </div>
             <div className="p-4 border-t border-border">
-              <button onClick={handleGenerate} disabled={generating} className="w-full border border-primary text-primary py-2 rounded-lg font-bold text-sm hover:bg-primary/10 transition-colors disabled:opacity-50">Desarrollar idea</button>
+              <button onClick={() => { if (!isPaidPlan(plan)) { onUpgrade(); return; } handleGenerate(); }} disabled={generating} className="w-full border border-primary text-primary py-2 rounded-lg font-bold text-sm hover:bg-primary/10 transition-colors disabled:opacity-50">Desarrollar idea</button>
             </div>
           </div>
 
@@ -372,7 +378,7 @@ function TabIdeas({ onIdeaSaved }: { onIdeaSaved: () => void }) {
               <p className="text-sm text-muted-foreground font-mono">Comparativa de tus trabajos de hace 3 años vs hoy. El storytelling del progreso nunca falla.</p>
             </div>
             <div className="p-4 border-t border-border">
-              <button onClick={handleGenerate} disabled={generating} className="w-full border border-primary text-primary py-2 rounded-lg font-bold text-sm hover:bg-primary/10 transition-colors disabled:opacity-50">Desarrollar idea</button>
+              <button onClick={() => { if (!isPaidPlan(plan)) { onUpgrade(); return; } handleGenerate(); }} disabled={generating} className="w-full border border-primary text-primary py-2 rounded-lg font-bold text-sm hover:bg-primary/10 transition-colors disabled:opacity-50">Desarrollar idea</button>
             </div>
           </div>
         </section>
@@ -383,7 +389,8 @@ function TabIdeas({ onIdeaSaved }: { onIdeaSaved: () => void }) {
 
 // ── Tab: Calendario ───────────────────────────────────────────────────────────
 
-function TabCalendario({ content, loading }: { content: DbContent[]; loading: boolean }) {
+function TabCalendario({ content, loading, onUpgrade }: { content: DbContent[]; loading: boolean; onUpgrade: () => void }) {
+  const { plan } = usePlan();
   const weekDays = getCurrentWeek();
 
   return (
@@ -395,7 +402,9 @@ function TabCalendario({ content, loading }: { content: DbContent[]; loading: bo
             <Zap className="w-3.5 h-3.5 text-primary" />
             <span className="font-mono text-[11px] text-muted-foreground">15 tokens</span>
           </div>
-          <button className="border border-primary text-primary px-4 py-2 rounded-lg font-bold text-sm hover:bg-primary/10 transition-colors flex items-center gap-2 shadow-glow-sm">
+          <button
+            onClick={() => { if (!isPaidPlan(plan)) { onUpgrade(); return; } }}
+            className="border border-primary text-primary px-4 py-2 rounded-lg font-bold text-sm hover:bg-primary/10 transition-colors flex items-center gap-2 shadow-glow-sm">
             <CalendarPlus className="w-4 h-4" /> Generar semana completa con IA
           </button>
         </div>
@@ -567,6 +576,7 @@ export default function ContenidoPage() {
   const [tab,            setTab]            = useState<Tab>("ideas");
   const [content,        setContent]        = useState<DbContent[]>([]);
   const [contentLoading, setContentLoading] = useState(true);
+  const [upgradeOpen,    setUpgradeOpen]    = useState(false);
 
   const fetchContent = useCallback(async () => {
     setContentLoading(true);
@@ -605,8 +615,8 @@ export default function ContenidoPage() {
         ))}
       </div>
 
-      {tab === "ideas"      && <TabIdeas onIdeaSaved={fetchContent} />}
-      {tab === "calendario" && <TabCalendario content={content} loading={contentLoading} />}
+      {tab === "ideas"      && <TabIdeas onIdeaSaved={fetchContent} onUpgrade={() => setUpgradeOpen(true)} />}
+      {tab === "calendario" && <TabCalendario content={content} loading={contentLoading} onUpgrade={() => setUpgradeOpen(true)} />}
       {tab === "biblioteca" && <TabBiblioteca content={content} loading={contentLoading} />}
 
       <footer className="mt-12 border-t border-border py-8 flex flex-col md:flex-row justify-between items-center text-muted-foreground text-sm">
@@ -617,6 +627,8 @@ export default function ContenidoPage() {
           ))}
         </div>
       </footer>
+
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </div>
   );
 }

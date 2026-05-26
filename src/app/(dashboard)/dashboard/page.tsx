@@ -7,6 +7,9 @@ import {
   Calendar, Sparkles, UserPlus,
 } from "lucide-react";
 import Link from "next/link";
+import { usePlan } from "@/components/shared/PlanContext";
+import { isPaidPlan } from "@/lib/plan";
+import UpgradeModal from "@/components/shared/UpgradeModal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -89,9 +92,11 @@ export default function DashboardPage() {
   const { user }  = useUser();
   const firstName = user?.firstName ?? "Artista";
 
-  const [data,    setData]    = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState<string | null>(null);
+  const [data,         setData]        = useState<DashboardData | null>(null);
+  const [loading,      setLoading]     = useState(true);
+  const [error,        setError]       = useState<string | null>(null);
+  const [upgradeOpen,  setUpgradeOpen] = useState(false);
+  const { plan } = usePlan();
 
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
@@ -127,6 +132,7 @@ export default function DashboardPage() {
 
   return (
     <div className="p-10 max-w-[1400px] mx-auto">
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
       {/* ── Header ── */}
       <header className="flex justify-between items-start mb-8">
         <div>
@@ -450,11 +456,12 @@ export default function DashboardPage() {
                 <span className="text-[#C084FC] font-bold">15%</span> esta semana.
               </p>
               <div className="flex flex-wrap gap-4 pt-2">
-                <Link href="/campanas">
-                  <button className="bg-primary text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-glow hover:shadow-glow-lg transition-all flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" /> Generar campaña con IA
-                  </button>
-                </Link>
+                <button
+                  onClick={() => isPaidPlan(plan) ? (window.location.href = '/campanas') : setUpgradeOpen(true)}
+                  className="bg-primary text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-glow hover:shadow-glow-lg transition-all flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" /> Generar campaña con IA
+                </button>
                 <Link href="/crm">
                   <button className="border border-border bg-transparent text-primary px-6 py-2.5 rounded-lg font-bold text-sm hover:bg-primary/10 transition-all">
                     Ver leads sin respuesta

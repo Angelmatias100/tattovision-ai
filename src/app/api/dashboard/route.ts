@@ -110,6 +110,7 @@ export async function GET() {
 
     return NextResponse.json({
       business_name:      biz.name as string,
+      plan:               biz.plan as string ?? 'starter',
       tv_tokens_balance:  biz.tv_tokens_balance ?? 0,
       tv_tokens_limit:    TOKEN_LIMITS[biz.plan as string] ?? 500,
       leads_this_month:   leadsCountRes.count ?? 0,

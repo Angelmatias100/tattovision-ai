@@ -7,6 +7,9 @@ import {
   Users, Rocket, Pause, Play, Edit, BarChart2,
   LayoutList, RefreshCw, AlertCircle, Check, Heart, ExternalLink,
 } from "lucide-react";
+import { usePlan } from "@/components/shared/PlanContext";
+import { isPaidPlan } from "@/lib/plan";
+import UpgradeModal from "@/components/shared/UpgradeModal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -863,11 +866,13 @@ function CampaignCard({
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function CampanasPage() {
-  const [campaigns,   setCampaigns]   = useState<DbCampaign[]>([]);
-  const [loading,     setLoading]     = useState(true);
-  const [launchingId, setLaunchingId] = useState<string | null>(null);
-  const [launchError, setLaunchError] = useState<string | null>(null);
-  const [wizardOpen,  setWizardOpen]  = useState(false);
+  const [campaigns,    setCampaigns]   = useState<DbCampaign[]>([]);
+  const [loading,      setLoading]     = useState(true);
+  const [launchingId,  setLaunchingId] = useState<string | null>(null);
+  const [launchError,  setLaunchError] = useState<string | null>(null);
+  const [wizardOpen,   setWizardOpen]  = useState(false);
+  const [upgradeOpen,  setUpgradeOpen] = useState(false);
+  const { plan } = usePlan();
 
   const fetchCampaigns = useCallback(async () => {
     setLoading(true);
@@ -884,7 +889,10 @@ export default function CampanasPage() {
 
   useEffect(() => { fetchCampaigns(); }, [fetchCampaigns]);
 
-  const openWizard  = useCallback(() => setWizardOpen(true), []);
+  const openWizard  = useCallback(() => {
+    if (!isPaidPlan(plan)) { setUpgradeOpen(true); return; }
+    setWizardOpen(true);
+  }, [plan]);
   const closeWizard = useCallback((saved?: boolean) => {
     setWizardOpen(false);
     if (saved) fetchCampaigns();
@@ -977,7 +985,7 @@ export default function CampanasPage() {
             <CampaignCard
               key={c.id}
               c={c}
-              onLaunch={() => handleLaunch(c.id)}
+              onLaunch={() => isPaidPlan(plan) ? handleLaunch(c.id) : setUpgradeOpen(true)}
               launching={launchingId === c.id}
             />
           ))
@@ -985,6 +993,7 @@ export default function CampanasPage() {
       </section>
 
       {wizardOpen && <CampaignWizard onClose={closeWizard} />}
+      <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
     </div>
   );
 }
