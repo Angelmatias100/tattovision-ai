@@ -43,7 +43,7 @@ export async function GET() {
 
     const { data: biz, error: bizErr } = await supabase
       .from('businesses')
-      .select('id, name, plan, tv_tokens_balance, tv_tokens_reset_date')
+      .select('id, name, plan, tv_tokens_balance, tv_tokens_reset_date, booking_slug')
       .eq('user_id', userId)
       .single()
 
@@ -114,6 +114,7 @@ export async function GET() {
       tv_tokens_balance:     biz.tv_tokens_balance ?? 0,
       tv_tokens_limit:       TOKEN_LIMITS[(biz.plan as string)] ?? 200,
       tv_tokens_reset_date:  (biz.tv_tokens_reset_date as string | null) ?? null,
+      booking_slug:          (biz.booking_slug as string | null) ?? null,
       leads_this_month:   leadsCountRes.count ?? 0,
       appointments_today: (apptTodayRes.data ?? []).length,
       pipeline_value:     pipelineValue,

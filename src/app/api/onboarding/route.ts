@@ -39,6 +39,17 @@ export async function POST(req: NextRequest) {
   // 4. Build derived values
   const avgTicketNum = avgTicket ? parseFloat(String(avgTicket)) : null
 
+  // Generate URL-safe booking slug from studio name (keep existing slug on update)
+  const bookingSlug = studioName
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, 40) || 'estudio'
+
   // Monthly revenue goal = appointments/month × avg ticket (if both supplied)
   const monthlyGoal =
     citasPerMonth && avgTicketNum
@@ -72,6 +83,7 @@ export async function POST(req: NextRequest) {
           avg_ticket:           avgTicketNum,
           monthly_goal:         monthlyGoal,
           instagram_url:        instagramUrl,
+          booking_slug:         bookingSlug,
           plan:                 'starter',
           tv_tokens_balance:    200,
           tv_tokens_reset_date: resetDateStr,

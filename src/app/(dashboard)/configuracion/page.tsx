@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { usePlan } from "@/components/shared/PlanContext";
 import {
   Building2, Users, Link2, CreditCard, Plus, Check, X,
   ToggleLeft, ToggleRight, Eye, EyeOff, Zap,
-  ExternalLink, CheckCircle, AtSign,
+  ExternalLink, CheckCircle, AtSign, Copy, AlertCircle,
+  RefreshCw, Globe,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -165,6 +166,7 @@ function TextInput({
 // ── Tab: Negocio ──────────────────────────────────────────────────────────────
 
 function TabNegocio() {
+  const { bookingSlug } = usePlan();
   const [studioName,  setStudioName]  = useState("TattooVision Studio");
   const [city,        setCity]        = useState("Buenos Aires");
   const [instagram,   setInstagram]   = useState("@tattoovision.ar");
@@ -172,6 +174,19 @@ function TabNegocio() {
   const [monthlyGoal, setMonthlyGoal] = useState("800000");
   const [styles,      setStyles]      = useState<string[]>(["Realismo", "Blackwork", "Japonés"]);
   const [saved,       setSaved]       = useState(false);
+  const [copied,      setCopied]      = useState(false);
+
+  const bookingUrl = bookingSlug
+    ? `${typeof window !== 'undefined' ? window.location.origin : 'https://tattovision-ai.vercel.app'}/booking/${bookingSlug}`
+    : null;
+
+  const handleCopy = () => {
+    if (!bookingUrl) return;
+    navigator.clipboard.writeText(bookingUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const toggleStyle = (s: string) =>
     setStyles((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
@@ -246,6 +261,51 @@ function TabNegocio() {
             );
           })}
         </div>
+      </SectionCard>
+
+      {/* Booking URL */}
+      <SectionCard>
+        <div className="flex items-center gap-2 mb-4">
+          <Globe className="w-4 h-4 text-primary" />
+          <h3 className="text-sm font-bold text-foreground">Link de reserva pública</h3>
+        </div>
+        {bookingSlug ? (
+          <>
+            <p className="text-xs text-muted-foreground mb-3">
+              Comparte este link con tus clientes para que reserven citas directamente.
+            </p>
+            <div className="flex gap-2">
+              <div className="flex-1 bg-[#0D0010] border border-border rounded-lg px-4 py-2.5 text-xs font-mono text-primary truncate">
+                {bookingUrl}
+              </div>
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-bold border transition-all flex-shrink-0"
+                style={{
+                  background:  copied ? "rgba(82,201,122,0.1)"  : "rgba(139,0,255,0.1)",
+                  borderColor: copied ? "rgba(82,201,122,0.4)"  : "rgba(139,0,255,0.35)",
+                  color:       copied ? "#52C97A"               : "#C084FC",
+                }}
+              >
+                {copied ? <CheckCircle className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? "Copiado" : "Copiar"}
+              </button>
+              <a
+                href={bookingUrl ?? "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-bold border border-border text-muted-foreground hover:border-primary/40 hover:text-foreground transition-all flex-shrink-0"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Compartir
+              </a>
+            </div>
+          </>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Tu link de reserva se generará automáticamente al completar el onboarding.
+          </p>
+        )}
       </SectionCard>
 
       <button
@@ -329,22 +389,101 @@ function TabArtistas() {
 
 // ── Tab: Integraciones ────────────────────────────────────────────────────────
 
+interface MetaStatus {
+  connected:    boolean;
+  user_name:    string | null;
+  account_id:   string | null;
+  account_name: string | null;
+  ad_accounts:  { id: string; name: string }[];
+}
+
 function TabIntegraciones() {
-  const [metaConnected,  setMetaConnected]  = useState(false);
-  const [resendKey,      setResendKey]      = useState("re_••••••••••••••••");
-  const [showKey,        setShowKey]        = useState(false);
-  const [keySaved,       setKeySaved]       = useState(false);
+  const [metaStatus,    setMetaStatus]    = useState<MetaStatus | null>(null);
+  const [metaLoading,   setMetaLoading]   = useState(true);
+  const [metaError,     setMetaError]     = useState<string | null>(null);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [selectedAcct,  setSelectedAcct]  = useState<string>("");
+  const [savingAcct,    setSavingAcct]    = useState(false);
+  const [resendKey,     setResendKey]     = useState("re_••••••••••••••••");
+  const [showKey,       setShowKey]       = useState(false);
+  const [keySaved,      setKeySaved]      = useState(false);
+
+  const fetchMetaStatus = useCallback(async () => {
+    setMetaLoading(true);
+    try {
+      const res  = await fetch("/api/meta/status");
+      const data = await res.json() as MetaStatus;
+      setMetaStatus(data);
+      if (data.account_id) setSelectedAcct(data.account_id);
+    } catch { /* non-fatal */ }
+    finally { setMetaLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    fetchMetaStatus();
+    const params   = new URLSearchParams(window.location.search);
+    const metaParam = params.get("meta");
+    const reason   = params.get("reason");
+    if (metaParam === "error" && reason) setMetaError(decodeURIComponent(reason));
+    if (metaParam) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("meta");
+      url.searchParams.delete("reason");
+      url.searchParams.delete("tab");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [fetchMetaStatus]);
+
+  const handleDisconnect = async () => {
+    setDisconnecting(true);
+    try {
+      await fetch("/api/meta/status", { method: "DELETE" });
+      setMetaStatus(s => s ? { ...s, connected: false, user_name: null, account_id: null, account_name: null, ad_accounts: [] } : null);
+      setSelectedAcct("");
+    } finally { setDisconnecting(false); }
+  };
+
+  const handleSaveAccount = async () => {
+    if (!metaStatus || !selectedAcct) return;
+    setSavingAcct(true);
+    const acct = metaStatus.ad_accounts.find(a => a.id === selectedAcct);
+    try {
+      await fetch("/api/meta/status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ meta_account_id: selectedAcct, meta_account_name: acct?.name }),
+      });
+      setMetaStatus(s => s ? { ...s, account_id: selectedAcct, account_name: acct?.name ?? null } : null);
+    } finally { setSavingAcct(false); }
+  };
 
   const handleKeySave = () => {
     setKeySaved(true);
     setTimeout(() => setKeySaved(false), 2000);
   };
 
+  const isConnected = metaStatus?.connected ?? false;
+
   return (
     <div className="space-y-5 max-w-2xl">
+      {/* OAuth error banner */}
+      {metaError && (
+        <div className="flex items-start gap-3 p-4 rounded-xl border" style={{ background: "rgba(255,59,59,0.08)", borderColor: "rgba(255,59,59,0.25)" }}>
+          <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-destructive">Error al conectar Meta</p>
+            <p className="text-xs text-muted-foreground mt-0.5 break-all">{metaError}</p>
+          </div>
+          <div className="flex gap-2 flex-shrink-0">
+            <a href="/api/meta/connect" className="text-xs font-bold text-[#0082FB] hover:underline">Reintentar</a>
+            <button onClick={() => setMetaError(null)}><X className="w-4 h-4 text-muted-foreground" /></button>
+          </div>
+        </div>
+      )}
+
       {/* Meta Business */}
       <SectionCard>
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4 mb-4">
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -355,36 +494,75 @@ function TabIntegraciones() {
             <div>
               <p className="font-bold text-sm text-foreground">Meta Business</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Conecta tu cuenta de Facebook e Instagram Ads para lanzar campañas directamente.
+                Conecta Facebook e Instagram Ads para lanzar campañas directamente.
               </p>
             </div>
           </div>
-          {metaConnected ? (
+          {metaLoading ? (
+            <RefreshCw className="w-4 h-4 text-muted-foreground animate-spin flex-shrink-0" />
+          ) : isConnected ? (
             <div className="flex items-center gap-2 flex-shrink-0">
-              <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border"
-                style={{ color: "#52C97A", background: "#52C97A1A", borderColor: "#52C97A40" }}
-              >
-                <CheckCircle className="w-3 h-3" />
-                Conectado
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border" style={{ color: "#52C97A", background: "#52C97A1A", borderColor: "#52C97A40" }}>
+                <CheckCircle className="w-3 h-3" /> Conectado
               </span>
               <button
-                onClick={() => setMetaConnected(false)}
-                className="p-1 rounded hover:bg-white/5 text-muted-foreground transition-colors"
+                onClick={handleDisconnect}
+                disabled={disconnecting}
+                className="text-xs font-bold text-muted-foreground border border-border px-3 py-1.5 rounded-lg hover:border-destructive/50 hover:text-destructive transition-colors disabled:opacity-50"
               >
-                <X className="w-4 h-4" />
+                {disconnecting ? "…" : "Desconectar"}
               </button>
             </div>
           ) : (
-            <button
-              onClick={() => setMetaConnected(true)}
+            <a
+              href="/api/meta/connect"
               className="flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold border border-[#0082FB]/40 text-[#0082FB] hover:bg-[#0082FB]/10 transition-colors flex-shrink-0"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
-              Conectar vía OAuth
-            </button>
+              <ExternalLink className="w-3.5 h-3.5" /> Conectar vía OAuth
+            </a>
           )}
         </div>
+
+        {isConnected && (
+          <div className="pt-4 border-t border-border space-y-3">
+            {metaStatus?.user_name && (
+              <p className="text-xs text-muted-foreground">
+                Cuenta: <span className="text-foreground font-semibold">{metaStatus.user_name}</span>
+              </p>
+            )}
+            {metaStatus && metaStatus.ad_accounts.length > 0 && (
+              <div>
+                <label className="block text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-1.5">
+                  Cuenta publicitaria activa
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    value={selectedAcct}
+                    onChange={e => setSelectedAcct(e.target.value)}
+                    className="flex-1 bg-[#1A0025] border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:border-primary outline-none"
+                  >
+                    {metaStatus.ad_accounts.map(a => (
+                      <option key={a.id} value={a.id}>{a.name} ({a.id})</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleSaveAccount}
+                    disabled={savingAcct || selectedAcct === metaStatus.account_id}
+                    className="px-4 py-2 rounded-lg text-xs font-bold disabled:opacity-40"
+                    style={{ background: "#8B00FF", color: "#fff" }}
+                  >
+                    {savingAcct ? "…" : "Guardar"}
+                  </button>
+                </div>
+              </div>
+            )}
+            {metaStatus && metaStatus.ad_accounts.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                No se encontraron cuentas publicitarias. Verifica tu acceso en Meta Business Manager.
+              </p>
+            )}
+          </div>
+        )}
       </SectionCard>
 
       {/* Supabase */}
@@ -404,12 +582,8 @@ function TabIntegraciones() {
               </p>
             </div>
           </div>
-          <span
-            className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border flex-shrink-0"
-            style={{ color: "#52C97A", background: "#52C97A1A", borderColor: "#52C97A40" }}
-          >
-            <CheckCircle className="w-3 h-3" />
-            Conectado
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold border flex-shrink-0" style={{ color: "#52C97A", background: "#52C97A1A", borderColor: "#52C97A40" }}>
+            <CheckCircle className="w-3 h-3" /> Conectado
           </span>
         </div>
       </SectionCard>
@@ -417,10 +591,7 @@ function TabIntegraciones() {
       {/* Resend */}
       <SectionCard>
         <div className="flex items-start gap-3 mb-4">
-          <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-            style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}
-          >
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
             <span className="text-foreground font-black text-sm">@</span>
           </div>
           <div>
@@ -440,21 +611,14 @@ function TabIntegraciones() {
                 onChange={(e) => setResendKey(e.target.value)}
                 className="w-full bg-[#1A0025] border border-border rounded-lg px-4 py-2.5 text-sm text-foreground pr-10 focus:border-primary outline-none transition-colors font-mono"
               />
-              <button
-                onClick={() => setShowKey((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              >
+              <button onClick={() => setShowKey(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                 {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
             <button
               onClick={handleKeySave}
               className="px-4 py-2.5 rounded-lg text-xs font-bold transition-all duration-150 flex-shrink-0"
-              style={{
-                background:  keySaved ? "#52C97A" : "#8B00FF",
-                color:       "#fff",
-                boxShadow:   keySaved ? "0 0 16px rgba(82,201,122,0.3)" : "0 0 16px rgba(139,0,255,0.3)",
-              }}
+              style={{ background: keySaved ? "#52C97A" : "#8B00FF", color: "#fff", boxShadow: keySaved ? "0 0 16px rgba(82,201,122,0.3)" : "0 0 16px rgba(139,0,255,0.3)" }}
             >
               {keySaved ? <CheckCircle className="w-4 h-4" /> : "Guardar"}
             </button>
@@ -642,6 +806,14 @@ function TabPlan() {
 
 export default function ConfiguracionPage() {
   const [tab, setTab] = useState<Tab>("negocio");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab") as Tab | null;
+    if (tabParam && ["negocio","artistas","integraciones","plan"].includes(tabParam)) {
+      setTab(tabParam);
+    }
+  }, []);
 
   return (
     <div className="p-10 max-w-[1200px] mx-auto">
