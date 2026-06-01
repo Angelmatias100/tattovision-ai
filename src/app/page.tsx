@@ -543,15 +543,10 @@ function Footer() {
           </p>
         </div>
         <div className="flex gap-8">
-          {["Privacidad", "Términos", "Soporte", "Contacto"].map((label) => (
-            <a
-              key={label}
-              href="#"
-              className="font-sans text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {label}
-            </a>
-          ))}
+          <a href="/privacy" className="font-sans text-sm text-muted-foreground hover:text-foreground transition-colors">Privacidad</a>
+          <a href="/terms" className="font-sans text-sm text-muted-foreground hover:text-foreground transition-colors">Términos</a>
+          <a href="mailto:support@tattoovision.ai" className="font-sans text-sm text-muted-foreground hover:text-foreground transition-colors">Soporte</a>
+          <a href="mailto:support@tattoovision.ai" className="font-sans text-sm text-muted-foreground hover:text-foreground transition-colors">Contacto</a>
         </div>
       </div>
     </footer>
