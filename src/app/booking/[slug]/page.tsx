@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, MapPin, Check, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Check, Loader2, Clock } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -22,12 +22,12 @@ interface BookingForm {
   notes: string;
 }
 
-const HOUR_SLOTS = ["10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00"];
-const DAY_LABELS = ["Lun","Mar","Mié","Jue","Vie","Sáb"];
-const MONTH_NAMES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const DAY_LABELS   = ["Lun","Mar","Mié","Jue","Vie","Sáb"];
+const MONTH_NAMES  = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const DAY_NAMES    = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"];
 
 const BUDGET_OPTIONS = [
-  { value: "", label: "Sin presupuesto definido" },
+  { value: "",           label: "Sin presupuesto definido" },
   { value: "hasta-100",   label: "Hasta $100" },
   { value: "100-300",     label: "$100 – $300" },
   { value: "300-500",     label: "$300 – $500" },
@@ -44,7 +44,7 @@ const BODY_PARTS = [
 
 function getWeekStart(base: Date): Date {
   const d = new Date(base);
-  const day = d.getDay(); // 0=Sun, 1=Mon
+  const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   d.setDate(d.getDate() + diff);
   d.setHours(0, 0, 0, 0);
@@ -65,22 +65,83 @@ function toDateStr(d: Date): string {
 
 function isPast(dateStr: string, time: string): boolean {
   const now = new Date();
-  const dt = new Date(`${dateStr}T${time}:00`);
+  const dt  = new Date(`${dateStr}T${time}:00`);
   return dt <= now;
+}
+
+function formatDateLong(dateStr: string): string {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const d = new Date(year, month - 1, day);
+  const name = DAY_NAMES[d.getDay()];
+  return `${name.charAt(0).toUpperCase() + name.slice(1)}, ${day} de ${MONTH_NAMES[month - 1]} ${year}`;
+}
+
+// ── StepIndicator ─────────────────────────────────────────────────
+
+function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
+  const steps = [
+    { n: 1, label: "Elige día" },
+    { n: 2, label: "Elige hora" },
+    { n: 3, label: "Tu información" },
+  ] as const;
+
+  return (
+    <div className="flex items-start w-full max-w-xs mx-auto mb-8">
+      {steps.map((step, i) => (
+        <div key={step.n} className="flex items-start flex-1">
+          <div className="flex flex-col items-center gap-1 flex-1">
+            <div
+              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-200"
+              style={{
+                background: step.n <= current
+                  ? "linear-gradient(135deg, #8B00FF, #6200B3)"
+                  : "rgba(255,255,255,0.05)",
+                border: step.n === current
+                  ? "2px solid rgba(139,0,255,0.8)"
+                  : step.n < current
+                  ? "2px solid rgba(139,0,255,0.5)"
+                  : "2px solid rgba(255,255,255,0.1)",
+                color: step.n <= current ? "#fff" : "#4a3060",
+              }}
+            >
+              {step.n < current ? <Check className="w-4 h-4" /> : step.n}
+            </div>
+            <span
+              className="text-[9px] font-bold uppercase tracking-wider text-center leading-tight"
+              style={{ color: step.n === current ? "#C084FC" : step.n < current ? "#8B00FF" : "#3a2a4a" }}
+            >
+              {step.label}
+            </span>
+          </div>
+          {i < steps.length - 1 && (
+            <div
+              className="h-px w-full mt-4 transition-all duration-200"
+              style={{ background: step.n < current ? "rgba(139,0,255,0.4)" : "rgba(255,255,255,0.08)" }}
+            />
+          )}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 // ── Page ──────────────────────────────────────────────────────────
 
 export default function BookingPage() {
   const { slug } = useParams<{ slug: string }>();
+  const formRef  = useRef<HTMLElement>(null);
 
-  const [studio,      setStudio]      = useState<Studio | null>(null);
-  const [bookedSet,   setBookedSet]   = useState<Set<string>>(new Set());
-  const [loadError,   setLoadError]   = useState<string | null>(null);
+  const [studio,         setStudio]        = useState<Studio | null>(null);
+  const [bookedSet,      setBookedSet]      = useState<Set<string>>(new Set());
+  const [loadError,      setLoadError]      = useState<string | null>(null);
 
-  const [weekStart,   setWeekStart]   = useState<Date>(() => getWeekStart(new Date()));
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  const [selectedTime,setSelectedTime]= useState<string | null>(null);
+  const [weekStart,      setWeekStart]      = useState<Date>(() => getWeekStart(new Date()));
+  const [selectedDay,    setSelectedDay]    = useState<string | null>(null);
+  const [selectedTime,   setSelectedTime]   = useState<string | null>(null);
+
+  const [hourSlots,      setHourSlots]      = useState<string[]>([]);
+  const [dayBookedTimes, setDayBookedTimes] = useState<Set<string>>(new Set());
+  const [slotsLoading,   setSlotsLoading]   = useState(false);
 
   const [form, setForm] = useState<BookingForm>({
     name: "", phone: "", email: "",
@@ -91,12 +152,21 @@ export default function BookingPage() {
   const [submitted,   setSubmitted]   = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const weekDays = getWeekDays(weekStart);
-  const firstDay = weekDays[0];
-  const lastDay  = weekDays[5];
+  const weekDays   = getWeekDays(weekStart);
+  const firstDay   = weekDays[0];
+  const lastDay    = weekDays[5];
   const rangeLabel = `${firstDay.getDate()} – ${lastDay.getDate()} ${MONTH_NAMES[lastDay.getMonth()]} ${lastDay.getFullYear()}`;
 
-  // Fetch studio data
+  const currentStep: 1 | 2 | 3 = !selectedDay ? 1 : !selectedTime ? 2 : 3;
+
+  // Auto-scroll to form when user picks a time
+  useEffect(() => {
+    if (selectedTime && formRef.current) {
+      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [selectedTime]);
+
+  // Initial load: studio info + 60-day bulk booked slots
   const loadStudio = useCallback(async () => {
     try {
       const res = await fetch(`/api/booking/${slug}`);
@@ -104,6 +174,7 @@ export default function BookingPage() {
       const data = await res.json();
       setStudio(data.business);
       setBookedSet(new Set<string>(data.bookedSlots as string[]));
+      if (data.hourSlots) setHourSlots(data.hourSlots as string[]);
     } catch {
       setLoadError("Error al cargar el estudio.");
     }
@@ -127,9 +198,29 @@ export default function BookingPage() {
     setSelectedTime(null);
   };
 
-  const handleDayClick = (dateStr: string) => {
-    setSelectedDay(prev => prev === dateStr ? null : dateStr);
+  // Per-day fetch for fresh slot data
+  const handleDayClick = async (dateStr: string) => {
+    if (selectedDay === dateStr) {
+      setSelectedDay(null);
+      setSelectedTime(null);
+      setDayBookedTimes(new Set());
+      return;
+    }
+    setSelectedDay(dateStr);
     setSelectedTime(null);
+    setSlotsLoading(true);
+    try {
+      const res = await fetch(`/api/booking/${slug}?date=${dateStr}`);
+      if (res.ok) {
+        const data = await res.json();
+        setDayBookedTimes(new Set<string>(data.bookedTimes as string[]));
+        if (data.hourSlots) setHourSlots(data.hourSlots as string[]);
+      }
+    } catch {
+      // silently fall back to bulk booked data
+    } finally {
+      setSlotsLoading(false);
+    }
   };
 
   const handleSlotClick = (time: string) => {
@@ -139,18 +230,13 @@ export default function BookingPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDay || !selectedTime) return;
-
     setSubmitting(true);
     setSubmitError(null);
     try {
       const res = await fetch(`/api/booking/${slug}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          date: selectedDay,
-          time: selectedTime,
-        }),
+        body: JSON.stringify({ ...form, date: selectedDay, time: selectedTime }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error al enviar solicitud");
@@ -195,19 +281,35 @@ export default function BookingPage() {
           >
             <Check className="w-10 h-10" style={{ color: "#52C97A" }} />
           </div>
+          <div className="text-5xl select-none">🎨</div>
           <h1 className="font-playfair text-3xl font-bold text-white">¡Solicitud enviada!</h1>
+          <div
+            className="px-5 py-4 rounded-xl text-left space-y-2"
+            style={{ background: "rgba(139,0,255,0.08)", border: "1px solid rgba(139,0,255,0.2)" }}
+          >
+            <p className="text-sm text-[#988ca2]">
+              Estudio: <span className="text-white font-semibold">{studio.name}</span>
+            </p>
+            {selectedDay && (
+              <p className="text-sm text-[#988ca2]">
+                Fecha: <span className="text-[#C084FC] font-semibold">{formatDateLong(selectedDay)}</span>
+              </p>
+            )}
+            {selectedTime && (
+              <p className="text-sm text-[#988ca2]">
+                Hora: <span className="text-[#C084FC] font-semibold">{selectedTime}</span>
+              </p>
+            )}
+            {form.styleInterest && (
+              <p className="text-sm text-[#988ca2]">
+                Estilo: <span className="text-white font-semibold">{form.styleInterest}</span>
+              </p>
+            )}
+          </div>
           <p className="text-[#988ca2] leading-relaxed">
-            Te contactaremos pronto para confirmar tu cita en{" "}
-            <span className="text-white font-semibold">{studio.name}</span>.
-            <br />
-            <span className="text-sm mt-2 block">
-              Fecha: <strong className="text-[#C084FC]">{selectedDay}</strong> a las{" "}
-              <strong className="text-[#C084FC]">{selectedTime}</strong>
-            </span>
+            Te contactaremos para confirmar tu cita 🎨
           </p>
-          <p className="text-xs text-[#5a4a6a]">
-            Reserva realizada con TattooVision AI
-          </p>
+          <p className="text-xs text-[#3a2a4a]">Reserva realizada con TattooVision AI</p>
         </div>
       </main>
     );
@@ -224,7 +326,7 @@ export default function BookingPage() {
         <span className="text-xs text-[#5a4a6a]">Reserva online</span>
       </div>
 
-      <div className="max-w-2xl mx-auto px-6 py-10 space-y-10">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-10 space-y-8">
 
         {/* ── Studio header ── */}
         <div className="flex items-center gap-5">
@@ -257,9 +359,12 @@ export default function BookingPage() {
           </div>
         </div>
 
+        {/* ── Step indicator ── */}
+        <StepIndicator current={currentStep} />
+
         {/* ── Calendar ── */}
         <section
-          className="rounded-2xl p-6"
+          className="rounded-2xl p-5 sm:p-6"
           style={{ background: "rgba(26,0,37,0.8)", border: "1px solid rgba(45,0,80,0.6)" }}
         >
           <h2 className="font-playfair text-lg font-semibold text-white mb-5">
@@ -284,9 +389,9 @@ export default function BookingPage() {
           </div>
 
           {/* Day grid */}
-          <div className="grid grid-cols-6 gap-2 mb-4">
+          <div className="grid grid-cols-6 gap-1.5 mb-4">
             {weekDays.map((day, i) => {
-              const dateStr  = toDateStr(day);
+              const dateStr   = toDateStr(day);
               const isPastDay = dateStr < today;
               const isSelected = selectedDay === dateStr;
               const isToday   = dateStr === today;
@@ -310,7 +415,7 @@ export default function BookingPage() {
                     cursor: isPastDay ? "not-allowed" : "pointer",
                   }}
                 >
-                  <span className="text-[10px] font-bold text-[#988ca2] uppercase tracking-wider">
+                  <span className="text-[9px] font-bold text-[#988ca2] uppercase tracking-wider">
                     {DAY_LABELS[i]}
                   </span>
                   <span
@@ -330,50 +435,73 @@ export default function BookingPage() {
               <p className="text-xs font-bold text-[#988ca2] uppercase tracking-widest mb-3">
                 Horarios disponibles
               </p>
-              <div className="flex flex-wrap gap-2">
-                {HOUR_SLOTS.map(time => {
-                  const key       = `${selectedDay}_${time}`;
-                  const isBooked  = bookedSet.has(key);
-                  const pastSlot  = isPast(selectedDay, time);
-                  const unavail   = isBooked || pastSlot;
-                  const isSelTime = selectedTime === time;
 
-                  return (
-                    <button
-                      key={time}
-                      onClick={() => !unavail && handleSlotClick(time)}
-                      disabled={unavail}
-                      className="px-4 py-2 rounded-lg text-sm font-bold transition-all duration-150"
-                      style={{
-                        background: isSelTime
-                          ? "rgba(139,0,255,0.3)"
-                          : unavail
-                          ? "rgba(255,255,255,0.03)"
-                          : "rgba(255,255,255,0.06)",
-                        border: isSelTime
-                          ? "1px solid rgba(139,0,255,0.7)"
-                          : "1px solid rgba(255,255,255,0.08)",
-                        color: isSelTime
-                          ? "#C084FC"
-                          : unavail
-                          ? "#3a2a4a"
-                          : "#ccc",
-                        cursor: unavail ? "not-allowed" : "pointer",
-                        textDecoration: unavail ? "line-through" : "none",
-                      }}
-                    >
-                      {time}
-                    </button>
-                  );
-                })}
-              </div>
+              {slotsLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-2">
+                    {hourSlots.map(time => {
+                      const isBooked  = dayBookedTimes.has(time) || bookedSet.has(`${selectedDay}_${time}`);
+                      const pastSlot  = isPast(selectedDay, time);
+                      const unavail   = isBooked || pastSlot;
+                      const isSelTime = selectedTime === time;
+
+                      return (
+                        <button
+                          key={time}
+                          onClick={() => !unavail && handleSlotClick(time)}
+                          disabled={unavail}
+                          className="flex flex-col items-center justify-center rounded-xl transition-all duration-150 min-h-[44px] px-2 py-2"
+                          style={{
+                            background: isSelTime
+                              ? "rgba(139,0,255,0.3)"
+                              : unavail
+                              ? "rgba(255,255,255,0.02)"
+                              : "rgba(255,255,255,0.06)",
+                            border: isSelTime
+                              ? "1px solid rgba(139,0,255,0.7)"
+                              : unavail
+                              ? "1px solid rgba(255,255,255,0.04)"
+                              : "1px solid rgba(255,255,255,0.1)",
+                            cursor: unavail ? "not-allowed" : "pointer",
+                          }}
+                        >
+                          <span
+                            className="text-sm font-bold"
+                            style={{ color: isSelTime ? "#C084FC" : unavail ? "#3a2a4a" : "#e0d0f0" }}
+                          >
+                            {time}
+                          </span>
+                          {unavail && (
+                            <span
+                              className="text-[9px] font-bold uppercase tracking-wider mt-0.5"
+                              style={{ color: "#3a2a4a" }}
+                            >
+                              Ocupado
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <p className="flex items-center gap-1.5 text-xs text-[#5a4a6a] mt-3">
+                    <Clock className="w-3.5 h-3.5" />
+                    Sesión de 2–3 horas aprox.
+                  </p>
+                </>
+              )}
             </div>
           )}
         </section>
 
         {/* ── Booking form ── */}
         <section
-          className="rounded-2xl p-6"
+          ref={formRef}
+          className="rounded-2xl p-5 sm:p-6"
           style={{ background: "rgba(26,0,37,0.8)", border: "1px solid rgba(45,0,80,0.6)" }}
         >
           <h2 className="font-playfair text-lg font-semibold text-white mb-5">
@@ -387,7 +515,7 @@ export default function BookingPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[11px] font-bold text-[#988ca2] uppercase tracking-wider mb-1.5">
                   Nombre <span className="text-primary">*</span>
@@ -427,7 +555,7 @@ export default function BookingPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[11px] font-bold text-[#988ca2] uppercase tracking-wider mb-1.5">
                   Estilo de tatuaje
@@ -494,7 +622,7 @@ export default function BookingPage() {
               >
                 <Check className="w-4 h-4 text-primary shrink-0" />
                 <span className="text-sm text-white">
-                  Fecha seleccionada: <strong className="text-[#C084FC]">{selectedDay}</strong>{" "}
+                  <strong className="text-[#C084FC]">{formatDateLong(selectedDay)}</strong>{" "}
                   a las <strong className="text-[#C084FC]">{selectedTime}</strong>
                 </span>
               </div>
