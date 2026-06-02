@@ -313,6 +313,25 @@ function Pricing() {
           </h2>
         </div>
 
+        {/* Free tier banner */}
+        <div className="flex items-center justify-between gap-4 mb-8 px-6 py-4 rounded-xl border border-border bg-card/50">
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              ¿Quieres explorar primero?
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Accede con funcionalidades limitadas, sin tarjeta de crédito.
+            </p>
+          </div>
+          <Link
+            href="/sign-up"
+            className="shrink-0 flex items-center gap-1.5 text-sm font-bold text-primary hover:text-primary/80 transition-colors"
+          >
+            Probar gratis
+            <ChevronRight size={15} />
+          </Link>
+        </div>
+
         <div className="grid md:grid-cols-3 gap-6 items-stretch mb-20">
           {/* Starter */}
           <div className="p-8 bg-card border border-border rounded-xl flex flex-col">
@@ -356,7 +375,7 @@ function Pricing() {
               href="/sign-up?plan=starter"
               className="w-full py-3 bg-primary/10 border border-border text-foreground rounded-lg hover:bg-primary/20 transition-colors font-sans font-bold text-sm text-center block"
             >
-              Probar gratis
+              Empezar con Starter
             </Link>
           </div>
 
