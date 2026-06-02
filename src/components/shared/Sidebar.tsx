@@ -9,6 +9,7 @@ import {
   Megaphone,
   Sparkles,
   Bot,
+  BotMessageSquare,
   Settings,
   Zap,
 } from "lucide-react";
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { href: "/agenda",          label: "Agenda",          icon: Calendar        },
   { href: "/campanas",        label: "Campañas",        icon: Megaphone       },
   { href: "/contenido",       label: "Contenido",       icon: Sparkles        },
+  { href: "/agente",          label: "Agente",          icon: BotMessageSquare},
   { href: "/automatizaciones",label: "Automatizaciones",icon: Bot             },
   { href: "/configuracion",   label: "Configuración",   icon: Settings        },
 ];
