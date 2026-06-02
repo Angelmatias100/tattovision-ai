@@ -30,10 +30,50 @@ interface FormData {
 // ── Static data ───────────────────────────────────────────────────────────────
 
 const COUNTRIES = [
-  "Argentina", "Chile", "Colombia", "México", "España",
-  "Perú", "Uruguay", "Bolivia", "Paraguay", "Ecuador",
-  "Venezuela", "Costa Rica", "Panamá", "Guatemala", "Otro",
+  { code: "CL", flag: "🇨🇱", name: "Chile" },
+  { code: "AR", flag: "🇦🇷", name: "Argentina" },
+  { code: "MX", flag: "🇲🇽", name: "México" },
+  { code: "CO", flag: "🇨🇴", name: "Colombia" },
+  { code: "PE", flag: "🇵🇪", name: "Perú" },
+  { code: "UY", flag: "🇺🇾", name: "Uruguay" },
+  { code: "ES", flag: "🇪🇸", name: "España" },
+  { code: "BR", flag: "🇧🇷", name: "Brasil" },
+  { code: "VE", flag: "🇻🇪", name: "Venezuela" },
+  { code: "EC", flag: "🇪🇨", name: "Ecuador" },
+  { code: "BO", flag: "🇧🇴", name: "Bolivia" },
+  { code: "PY", flag: "🇵🇾", name: "Paraguay" },
+  { code: "OTHER", flag: "🌎", name: "Otro país" },
 ];
+
+const TZ_TO_COUNTRY: Record<string, string> = {
+  "America/Santiago":               "Chile",
+  "America/Argentina/Buenos_Aires": "Argentina",
+  "America/Argentina/Cordoba":      "Argentina",
+  "America/Argentina/Mendoza":      "Argentina",
+  "America/Argentina/Tucuman":      "Argentina",
+  "America/Mexico_City":            "México",
+  "America/Monterrey":              "México",
+  "America/Cancun":                 "México",
+  "America/Bogota":                 "Colombia",
+  "America/Lima":                   "Perú",
+  "America/Montevideo":             "Uruguay",
+  "Europe/Madrid":                  "España",
+  "America/Sao_Paulo":              "Brasil",
+  "America/Manaus":                 "Brasil",
+  "America/Caracas":                "Venezuela",
+  "America/Guayaquil":              "Ecuador",
+  "America/La_Paz":                 "Bolivia",
+  "America/Asuncion":               "Paraguay",
+};
+
+function detectCountryName(): string {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return TZ_TO_COUNTRY[tz] ?? "Chile";
+  } catch {
+    return "Chile";
+  }
+}
 
 const STYLES = [
   "Blackwork", "Realismo", "Japonés", "Neo-trad",
@@ -341,8 +381,8 @@ function Step2({
             }}
           >
             {COUNTRIES.map((c) => (
-              <option key={c} value={c} style={{ background: "#1A0025" }}>
-                {c}
+              <option key={c.code} value={c.name} style={{ background: "#1A0025" }}>
+                {c.flag} {c.name}
               </option>
             ))}
           </select>
@@ -719,12 +759,17 @@ const INITIAL: FormData = {
   hasMeta: false,
 };
 
+// Initializer used in useState — runs once on client, safe to call Intl
+function makeInitial(): FormData {
+  return { ...INITIAL, country: detectCountryName() };
+}
+
 const TOTAL_STEPS = 6;
 
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep]         = useState(1);
-  const [data, setData]         = useState<FormData>(INITIAL);
+  const [data, setData]         = useState<FormData>(makeInitial);
   const [isLoading, setLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 

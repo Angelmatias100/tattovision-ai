@@ -4,10 +4,9 @@ import {
   Calendar,
   Megaphone,
   Sparkles,
-  CheckCircle2,
-  PlusCircle,
   ChevronRight,
 } from "lucide-react";
+import { PricingCards } from "@/components/PricingCards";
 
 // ── Navbar ────────────────────────────────────────────────────
 function Navbar() {
@@ -38,7 +37,7 @@ function Navbar() {
             href="/sign-up"
             className="bg-primary text-white text-sm font-bold px-5 py-2 rounded transition-shadow hover:shadow-glow active:opacity-80"
           >
-            Probar gratis
+            Prueba gratis
           </Link>
         </div>
       </nav>
@@ -173,7 +172,7 @@ function Hero() {
             href="/sign-up"
             className="bg-primary text-white px-8 py-4 rounded-lg font-sans font-bold text-base transition-shadow hover:shadow-glow active:scale-95 inline-flex items-center justify-center gap-2"
           >
-            Probar gratis
+            Prueba gratis
             <ChevronRight size={18} />
           </Link>
         </div>
@@ -327,155 +326,12 @@ function Pricing() {
             href="/sign-up"
             className="shrink-0 flex items-center gap-1.5 text-sm font-bold text-primary hover:text-primary/80 transition-colors"
           >
-            Probar gratis
+            Prueba gratis
             <ChevronRight size={15} />
           </Link>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-6 items-stretch mb-20">
-          {/* Starter */}
-          <div className="p-8 bg-card border border-border rounded-xl flex flex-col">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="font-playfair text-xl font-bold text-foreground">
-                  STARTER
-                </h3>
-                <p className="font-sans text-sm text-muted-foreground mt-1">
-                  Para artistas independientes
-                </p>
-              </div>
-              <span className="bg-primary/20 text-primary px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border border-primary/30">
-                ⚡ 200 tokens/mes
-              </span>
-            </div>
-            <div className="font-mono text-4xl font-semibold text-primary mb-6">
-              $79
-              <span className="text-sm font-normal text-muted-foreground">
-                /mes
-              </span>
-            </div>
-            <ul className="text-left mb-8 space-y-4 flex-grow text-sm">
-              {[
-                "200 TV Tokens",
-                "CRM 200 leads",
-                "Agenda online",
-                "Campañas/Contenido/Auto con tokens",
-              ].map((f) => (
-                <li key={f} className="flex items-center gap-2 text-foreground">
-                  <CheckCircle2 size={14} className="text-primary shrink-0" />
-                  {f}
-                </li>
-              ))}
-              <li className="flex items-center gap-2 text-muted-foreground italic">
-                <PlusCircle size={14} className="text-primary/50 shrink-0" />
-                Extra $9 c/100
-              </li>
-            </ul>
-            <Link
-              href="/sign-up?plan=starter"
-              className="w-full py-3 bg-primary/10 border border-border text-foreground rounded-lg hover:bg-primary/20 transition-colors font-sans font-bold text-sm text-center block"
-            >
-              Empezar con Starter
-            </Link>
-          </div>
-
-          {/* PRO — highlighted */}
-          <div className="relative p-8 bg-[#15001A] border-2 border-primary rounded-xl flex flex-col md:scale-105 z-10 shadow-glow-sm">
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white px-4 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider whitespace-nowrap">
-              RECOMENDADO
-            </div>
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="font-playfair text-xl font-bold text-foreground">
-                  PRO
-                </h3>
-                <p className="font-sans text-sm text-muted-foreground mt-1">
-                  Para estudios en crecimiento
-                </p>
-              </div>
-              <span className="bg-primary text-white px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider">
-                600 tokens/mes
-              </span>
-            </div>
-            <div className="font-mono text-4xl font-semibold text-primary mb-6">
-              $179
-              <span className="text-sm font-normal text-muted-foreground">
-                /mes
-              </span>
-            </div>
-            <ul className="text-left mb-8 space-y-4 flex-grow text-sm">
-              {[
-                "600 TV Tokens",
-                "CRM ilimitado",
-                "Agenda multi-artista (5)",
-                "Campañas tokens",
-                "Contenido IA completo",
-                "Automatizaciones avanzadas",
-                "Reportes y Soporte prioritario",
-              ].map((f) => (
-                <li key={f} className="flex items-center gap-2 text-foreground">
-                  <CheckCircle2 size={14} className="text-primary shrink-0" />
-                  {f}
-                </li>
-              ))}
-              <li className="flex items-center gap-2 text-muted-foreground italic">
-                <PlusCircle size={14} className="text-primary/50 shrink-0" />
-                Extra $7 c/100
-              </li>
-            </ul>
-            <Link
-              href="/sign-up?plan=pro"
-              className="w-full py-4 bg-primary text-white rounded-lg hover:shadow-glow transition-shadow font-sans font-bold text-sm text-center block"
-            >
-              Empezar con Pro
-            </Link>
-          </div>
-
-          {/* Agency */}
-          <div className="p-8 bg-card border border-border rounded-xl flex flex-col">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <h3 className="font-playfair text-xl font-bold text-foreground">
-                  AGENCY
-                </h3>
-                <p className="font-sans text-sm text-muted-foreground mt-1">
-                  Para estudios grandes y agencias
-                </p>
-              </div>
-              <span className="bg-gradient-to-r from-yellow-400 to-amber-500 bg-clip-text text-transparent text-[10px] font-mono font-bold uppercase tracking-wider border border-yellow-500/40 px-3 py-1 rounded-full">
-                2000 tokens/mes
-              </span>
-            </div>
-            <div className="font-mono text-4xl font-semibold text-primary mb-6">
-              $349
-              <span className="text-sm font-normal text-muted-foreground">
-                /mes
-              </span>
-            </div>
-            <ul className="text-left mb-8 space-y-4 flex-grow text-sm">
-              {[
-                "2000 TV Tokens",
-                "Artistas ilimitados",
-                "Tokens acumulables (3 meses)",
-                "Editor video reels",
-                "Reportes avanzados",
-                "Soporte dedicado & White label",
-              ].map((f) => (
-                <li key={f} className="flex items-center gap-2 text-foreground">
-                  <CheckCircle2 size={14} className="text-primary shrink-0" />
-                  {f}
-                </li>
-              ))}
-              <li className="flex items-center gap-2 text-muted-foreground italic">
-                <PlusCircle size={14} className="text-primary/50 shrink-0" />
-                Extra $5 c/100
-              </li>
-            </ul>
-            <button className="w-full py-3 border border-border text-foreground rounded-lg hover:border-primary transition-colors font-sans font-bold text-sm">
-              Contactar ventas
-            </button>
-          </div>
-        </div>
+        <PricingCards />
 
         {/* TV Token explainer */}
         <div className="grid md:grid-cols-2 gap-6 items-center pt-10 border-t border-border/30">
