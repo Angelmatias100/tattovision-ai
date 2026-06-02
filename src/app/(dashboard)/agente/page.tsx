@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import {
   Bot, Wifi, MessageSquare, ChevronDown, ChevronRight,
   Send, PenLine, UserPlus, Sparkles, Check, Clock, Zap,
@@ -8,7 +8,8 @@ import {
 } from 'lucide-react'
 import {
   MOCK_CONVERSATIONS, DEFAULT_CONFIG, STATUS_CONFIG, INTENT_CONFIG,
-  type DmConversation, type DmStatus, type AgentConfig,
+  TONE_OPTIONS, LANGUAGE_OPTIONS,
+  type DmConversation, type DmStatus, type AgentConfig, type ToneOption, type LanguageOption,
 } from '@/lib/agente'
 
 type Tab = 'bandeja' | 'config'
@@ -308,9 +309,26 @@ interface ConfigTabProps {
   onChange:   (patch: Partial<AgentConfig>) => void
   autoMode:   boolean
   onAutoMode: (v: boolean) => void
+  onSave:     () => Promise<void>
+  saving:     boolean
+  saved:      boolean
 }
 
-function ConfigTab({ config, onChange, autoMode, onAutoMode }: ConfigTabProps) {
+function buildPreview(config: AgentConfig): string {
+  const greetEmoji = config.emojiEnabled ? ' 💜' : ''
+  const toneText: Record<ToneOption, string> = {
+    amigable:    'Gracias por escribirnos, nos encanta atenderte.',
+    profesional: 'Gracias por comunicarse con nosotros.',
+    creativo:    '¡Qué emocionante! Hagamos arte juntos.',
+    directo:     '¿En qué te puedo ayudar?',
+  }
+  const cta = config.emojiEnabled ? ' ¿Agendamos una consulta? 🗓️' : ' ¿Agendamos una consulta?'
+  const name = config.agentName ? `${config.agentName}: ` : ''
+  const sig  = config.signature ? `\n— ${config.signature}` : ''
+  return `${name}¡Hola!${greetEmoji} ${toneText[config.tone]}${cta}${sig}`
+}
+
+function ConfigTab({ config, onChange, autoMode, onAutoMode, onSave, saving, saved }: ConfigTabProps) {
   const [testMsg,    setTestMsg]    = useState('¿Cuánto cuesta un tatuaje pequeño en la muñeca?')
   const [testResult, setTestResult] = useState('')
   const [testing,    setTesting]    = useState(false)
@@ -415,6 +433,117 @@ function ConfigTab({ config, onChange, autoMode, onAutoMode }: ConfigTabProps) {
         </div>
       </div>
 
+      {/* Personality */}
+      <div className="bg-card border border-border rounded-xl p-5 space-y-5">
+        <div>
+          <h3 className="font-semibold text-foreground">Personalidad del agente</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Define cómo se presenta y comunica tu agente con los clientes.
+          </p>
+        </div>
+
+        {/* Agent name */}
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-1.5">Nombre del agente</label>
+          <input
+            type="text"
+            value={config.agentName}
+            onChange={e => onChange({ agentName: e.target.value })}
+            placeholder="Asistente, Luna, Ink Bot..."
+            className="w-full bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50 transition-colors placeholder-muted-foreground/40"
+          />
+        </div>
+
+        {/* Tone */}
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-2">Tono de respuesta</label>
+          <div className="grid grid-cols-2 gap-2">
+            {TONE_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => onChange({ tone: opt.value as ToneOption })}
+                className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-colors ${
+                  config.tone === opt.value
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border text-muted-foreground hover:border-primary/30'
+                }`}
+              >
+                <div className="font-medium text-xs">{opt.label}</div>
+                <div className="text-[10px] opacity-60 mt-0.5">{opt.description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Language */}
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-2">Idioma principal</label>
+          <div className="flex gap-2">
+            {LANGUAGE_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                onClick={() => onChange({ language: opt.value as LanguageOption })}
+                className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                  config.language === opt.value
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border text-muted-foreground hover:border-primary/30'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Emoji toggle + Signature */}
+        <div className="flex gap-4 items-start">
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-muted-foreground mb-2">Emoji en respuestas</label>
+            <div className="flex gap-2">
+              <button
+                onClick={() => onChange({ emojiEnabled: true })}
+                className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                  config.emojiEnabled
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border text-muted-foreground hover:border-primary/30'
+                }`}
+              >
+                😊 ON
+              </button>
+              <button
+                onClick={() => onChange({ emojiEnabled: false })}
+                className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                  !config.emojiEnabled
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border text-muted-foreground hover:border-primary/30'
+                }`}
+              >
+                OFF
+              </button>
+            </div>
+          </div>
+          <div className="flex-[2]">
+            <label className="block text-xs font-medium text-muted-foreground mb-1.5">Firma automática</label>
+            <input
+              type="text"
+              value={config.signature}
+              onChange={e => onChange({ signature: e.target.value })}
+              placeholder="Studio Ink · @tu_estudio"
+              className="w-full bg-secondary border border-border rounded-lg px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50 transition-colors placeholder-muted-foreground/40"
+            />
+          </div>
+        </div>
+
+        {/* Preview */}
+        <div className="rounded-xl bg-primary/5 border border-primary/20 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Bot className="w-3.5 h-3.5 text-primary" />
+            <span className="text-[11px] font-bold text-primary uppercase tracking-wide">Preview de personalidad</span>
+          </div>
+          <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap">{buildPreview(config)}</p>
+        </div>
+      </div>
+
       {/* Business context */}
       <div className="bg-card border border-border rounded-xl p-5 space-y-4">
         <h3 className="font-semibold text-foreground">Contexto del negocio</h3>
@@ -479,6 +608,29 @@ function ConfigTab({ config, onChange, autoMode, onAutoMode }: ConfigTabProps) {
           </div>
         )}
       </div>
+
+      {/* Save */}
+      <div className="flex items-center gap-3 pb-4">
+        <button
+          onClick={onSave}
+          disabled={saving}
+          className={`flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-bold transition-all disabled:opacity-50 ${
+            saved
+              ? 'bg-green-500/20 border border-green-500/40 text-green-400'
+              : 'bg-primary text-white hover:shadow-glow'
+          }`}
+        >
+          {saving
+            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Guardando...</>
+            : saved
+            ? <><Check className="w-3.5 h-3.5" />Configuración guardada</>
+            : 'Guardar configuración'
+          }
+        </button>
+        <p className="text-xs text-muted-foreground">
+          Guarda la personalidad y el contexto del agente en tu perfil de negocio.
+        </p>
+      </div>
     </div>
   )
 }
@@ -494,6 +646,19 @@ export default function AgentePage() {
   const [config,        setConfig]        = useState<AgentConfig>(DEFAULT_CONFIG)
   const [sentIds,       setSentIds]       = useState<Set<string>>(new Set())
   const [creatingFor,   setCreatingFor]   = useState<string | null>(null)
+  const [saving,        setSaving]        = useState(false)
+  const [saved,         setSaved]         = useState(false)
+
+  useEffect(() => {
+    fetch('/api/business/agent-config')
+      .then(r => r.json())
+      .then(data => {
+        if (data?.agent_config && typeof data.agent_config === 'object') {
+          setConfig(prev => ({ ...prev, ...data.agent_config }))
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const selectedConv = conversations.find(c => c.id === selectedId) ?? null
   const newCount     = conversations.filter(c => c.status === 'nuevo').length
@@ -524,6 +689,23 @@ export default function AgentePage() {
       setSentIds(prev => { const n = new Set(prev); n.delete(selectedId); return n })
     }, 3000)
   }, [selectedId])
+
+  const handleSaveConfig = useCallback(async () => {
+    setSaving(true)
+    try {
+      await fetch('/api/business/agent-config', {
+        method:  'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ agent_config: config }),
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    } catch (err) {
+      console.error('[handleSaveConfig]', err)
+    } finally {
+      setSaving(false)
+    }
+  }, [config])
 
   const handleCreateLead = useCallback(async (conv: DmConversation) => {
     setCreatingFor(conv.id)
@@ -661,6 +843,9 @@ export default function AgentePage() {
             onChange={patch => setConfig(prev => ({ ...prev, ...patch }))}
             autoMode={autoMode}
             onAutoMode={setAutoMode}
+            onSave={handleSaveConfig}
+            saving={saving}
+            saved={saved}
           />
         </div>
       )}

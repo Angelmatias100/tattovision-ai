@@ -4,7 +4,9 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   ChevronLeft, ChevronRight, Plus, X,
   Search, ChevronDown, Clock, MoreVertical, CalendarOff,
+  Share2, Copy, Check,
 } from "lucide-react";
+import { usePlan } from "@/components/shared/PlanContext";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -249,6 +251,77 @@ function CalendarSkeleton() {
           ))}
         </div>
       </aside>
+    </div>
+  );
+}
+
+// ── Share modal ───────────────────────────────────────────────────────────────
+
+function ShareModal({ bookingUrl, onClose }: { bookingUrl: string; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(bookingUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(`Hola! Puedes reservar tu cita aquí: ${bookingUrl}`)}`;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-md rounded-2xl border border-border bg-[#0D0010] p-6 shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h3 className="font-playfair text-lg font-bold text-foreground">Compartir tu agenda</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Envía este link a tus clientes para que reserven citas directamente.
+            </p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <label className="block text-xs font-medium text-muted-foreground">URL de reserva</label>
+          <div className="flex gap-2">
+            <div className="flex-1 bg-[#1A0025] border border-border rounded-lg px-3 py-2.5 text-xs font-mono text-primary truncate">
+              {bookingUrl}
+            </div>
+            <button
+              onClick={handleCopy}
+              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-bold border transition-all shrink-0 ${
+                copied
+                  ? "bg-green-500/10 border-green-500/40 text-green-400"
+                  : "bg-primary/10 border-primary/35 text-lavender hover:bg-primary/20"
+              }`}
+              style={{ color: copied ? undefined : "#C084FC" }}
+            >
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? "Copiado" : "Copiar"}
+            </button>
+          </div>
+
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full py-3 rounded-lg font-bold text-sm text-white transition-colors"
+            style={{ background: "#25D366" }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-4 h-4">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+            </svg>
+            Enviar por WhatsApp
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
@@ -749,10 +822,16 @@ export default function AgendaPage() {
   const [view,        setView]        = useState<ViewMode>("semana");
   const [weekOffset,  setWeekOffset]  = useState(0);
   const [modalOpen,   setModalOpen]   = useState(false);
+  const [shareOpen,   setShareOpen]   = useState(false);
   const [filterArtist,setFilter]      = useState("todos");
   const [appointments,setAppointments]= useState<Appointment[]>([]);
   const [artists,     setArtists]     = useState<ArtistOption[]>([]);
   const [isLoading,   setLoading]     = useState(true);
+
+  const { bookingSlug } = usePlan();
+  const bookingUrl = bookingSlug
+    ? `${typeof window !== "undefined" ? window.location.origin : "https://tattovision-ai.vercel.app"}/booking/${bookingSlug}`
+    : null;
 
   // Compute current week dates (stable per weekOffset)
   const today    = useMemo(() => new Date(), []);
@@ -882,6 +961,16 @@ export default function AgendaPage() {
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           </div>
 
+          {bookingUrl && (
+            <button
+              onClick={() => setShareOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border text-muted-foreground text-sm font-medium hover:border-primary/40 hover:text-primary transition-colors"
+            >
+              <Share2 className="w-4 h-4" />
+              Compartir agenda
+            </button>
+          )}
+
           <button
             onClick={openModal}
             className="bg-primary text-white px-6 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 shadow-glow hover:shadow-glow-lg transition-all active:scale-95"
@@ -1004,13 +1093,18 @@ export default function AgendaPage() {
         </div>
       )}
 
-      {/* ── Modal ── */}
+      {/* ── New cita modal ── */}
       {modalOpen && (
         <NewCitaModal
           artists={artists}
           onClose={closeModal}
           onCreated={handleApptCreated}
         />
+      )}
+
+      {/* ── Share modal ── */}
+      {shareOpen && bookingUrl && (
+        <ShareModal bookingUrl={bookingUrl} onClose={() => setShareOpen(false)} />
       )}
     </div>
   );

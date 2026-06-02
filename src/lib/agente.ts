@@ -1,6 +1,8 @@
 export type DmStatus  = 'nuevo' | 'respondido' | 'lead_creado'
 export type DmIntent  = 'precio' | 'cita' | 'general'
-export type AgentMode = 'automatico' | 'sugerencia'
+export type AgentMode     = 'automatico' | 'sugerencia'
+export type ToneOption    = 'amigable' | 'profesional' | 'creativo' | 'directo'
+export type LanguageOption = 'es' | 'en' | 'pt'
 
 export interface DmMessage {
   id:        string
@@ -35,6 +37,12 @@ export interface AgentConfig {
   templatePrecio:       string
   templateCita:         string
   templateFueraHorario: string
+  // Personality
+  agentName:    string
+  tone:         ToneOption
+  language:     LanguageOption
+  emojiEnabled: boolean
+  signature:    string
 }
 
 export const STATUS_CONFIG: Record<DmStatus, { label: string; color: string; bg: string }> = {
@@ -49,6 +57,19 @@ export const INTENT_CONFIG: Record<DmIntent, { label: string; color: string }> =
   general: { label: 'General', color: '#94a3b8' },
 }
 
+export const TONE_OPTIONS: { value: ToneOption; label: string; description: string }[] = [
+  { value: 'amigable',    label: 'Amigable y cercano',    description: 'Cálido, usa emojis, como un amigo del estudio' },
+  { value: 'profesional', label: 'Profesional y formal',  description: 'Educado, correcto, tono de negocio' },
+  { value: 'creativo',    label: 'Creativo y artístico',  description: 'Apasionado, usa metáforas del arte' },
+  { value: 'directo',     label: 'Directo y conciso',     description: 'Respuestas cortas, al grano' },
+]
+
+export const LANGUAGE_OPTIONS: { value: LanguageOption; label: string }[] = [
+  { value: 'es', label: 'Español' },
+  { value: 'en', label: 'English' },
+  { value: 'pt', label: 'Português' },
+]
+
 export const DEFAULT_CONFIG: AgentConfig = {
   mode:                 'sugerencia',
   estilos:              'Realismo, Japonés, Neo-tradicional, Fine Line, Blackwork',
@@ -59,6 +80,11 @@ export const DEFAULT_CONFIG: AgentConfig = {
   templatePrecio:       'Los precios dependen del tamaño, estilo y horas de trabajo. ¿Tienes una referencia en mente? Con eso te damos un presupuesto exacto. 📸 ¡Agenda una consulta gratuita!',
   templateCita:         'Tenemos disponibilidad esta semana. ¿Qué día y horario te viene mejor? Te pedimos una señal del 30% para confirmar. 🗓️',
   templateFueraHorario: 'Gracias por tu mensaje 🌙 En este momento estamos fuera de horario. Te respondemos mañana entre 10:00 y 20:00. ¡Hasta pronto!',
+  agentName:    'Asistente',
+  tone:         'amigable',
+  language:     'es',
+  emojiEnabled: true,
+  signature:    '',
 }
 
 export const MOCK_CONVERSATIONS: DmConversation[] = [
