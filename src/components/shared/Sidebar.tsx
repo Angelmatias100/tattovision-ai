@@ -38,7 +38,13 @@ function daysUntilReset(resetDate: string | null): string {
   return `Renuevan en ${diffDays} días`;
 }
 
-export default function Sidebar() {
+export default function Sidebar({
+  open = false,
+  onClose,
+}: {
+  open?: boolean;
+  onClose?: () => void;
+}) {
   const pathname = usePathname();
   const { plan, tokensBalance, tokensLimit, tokensResetDate, loading } = usePlan();
 
@@ -49,7 +55,11 @@ export default function Sidebar() {
   const renewText = daysUntilReset(tokensResetDate);
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-60 bg-card border-r border-border z-40 flex flex-col py-6">
+    <aside
+      className={`fixed left-0 top-0 h-screen w-60 bg-card border-r border-border z-40 flex flex-col py-6 transition-transform duration-300 ease-in-out md:translate-x-0 ${
+        open ? "translate-x-0" : "-translate-x-full"
+      }`}
+    >
       {/* Logo */}
       <div className="px-6 mb-10">
         <h1 className="font-playfair text-lg font-bold text-foreground uppercase tracking-wide leading-tight">
@@ -71,6 +81,7 @@ export default function Sidebar() {
               <li key={href}>
                 <Link
                   href={href}
+                  onClick={() => onClose?.()}
                   className={`flex items-center gap-3 px-4 py-3 rounded-sm text-sm transition-colors relative ${
                     active
                       ? "bg-primary/20 text-foreground font-bold before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-primary before:rounded-r"

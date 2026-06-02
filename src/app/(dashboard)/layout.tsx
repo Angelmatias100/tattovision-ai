@@ -1,4 +1,4 @@
-import Sidebar from "@/components/shared/Sidebar";
+import DashboardShell from "@/components/shared/DashboardShell";
 import { PlanProvider } from "@/components/shared/PlanContext";
 
 export default function DashboardLayout({
@@ -8,10 +8,7 @@ export default function DashboardLayout({
 }) {
   return (
     <PlanProvider>
-      <div className="flex min-h-screen bg-background">
-        <Sidebar />
-        <div className="flex-1 ml-60 min-h-screen overflow-auto">{children}</div>
-      </div>
+      <DashboardShell>{children}</DashboardShell>
     </PlanProvider>
   );
 }
