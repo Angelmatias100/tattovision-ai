@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -62,10 +63,8 @@ export default function Sidebar({
     >
       {/* Logo */}
       <div className="px-6 mb-10">
-        <h1 className="font-playfair text-lg font-bold text-foreground uppercase tracking-wide leading-tight">
-          TATTOOVISION AI
-        </h1>
-        <p className="font-mono text-[10px] text-muted-foreground opacity-60 tracking-widest mt-0.5">
+        <Image src="/logo.jpeg" alt="TattooVision AI" width={140} height={40} className="object-contain h-auto" />
+        <p className="font-mono text-[10px] text-muted-foreground opacity-60 tracking-widest mt-1">
           v2.4
         </p>
       </div>

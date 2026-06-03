@@ -1,4 +1,7 @@
 import Link from "next/link";
+import Image from "next/image";
+import { redirect } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
 import {
   Users,
   Calendar,
@@ -13,9 +16,7 @@ function Navbar() {
   return (
     <header className="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-md border-b border-border">
       <nav className="flex justify-between items-center h-16 px-5 md:px-10 max-w-[1440px] mx-auto">
-        <span className="font-playfair text-xl font-bold text-foreground uppercase tracking-wide">
-          TattooVision AI
-        </span>
+        <Image src="/logo.jpeg" alt="TattooVision AI" width={130} height={38} className="object-contain h-auto" priority />
 
         <div className="hidden md:flex items-center gap-8">
           <a href="#features" className="text-muted-foreground hover:text-primary transition-colors text-sm">
@@ -452,7 +453,10 @@ function Footer() {
 }
 
 // ── Page ──────────────────────────────────────────────────────
-export default function LandingPage() {
+export default async function LandingPage() {
+  const { userId } = await auth();
+  if (userId) redirect("/dashboard");
+
   return (
     <>
       <Navbar />

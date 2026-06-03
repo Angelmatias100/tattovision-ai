@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { CheckCircle2, PlusCircle } from "lucide-react";
 
 type CC = "CL" | "AR" | "MX" | "CO" | "PE" | "ES" | "BR" | "DEFAULT";
@@ -109,12 +108,14 @@ export function PricingCards() {
             <PlusCircle size={14} className="text-primary/50 shrink-0" />Extra $9 c/100
           </li>
         </ul>
-        <Link
-          href="/sign-up?plan=starter"
+        <a
+          href="https://wa.me/56936119298?text=Hola!%20Me%20interesa%20el%20plan%20Starter%20de%20TattooVision%20AI"
+          target="_blank"
+          rel="noopener noreferrer"
           className="w-full py-3 bg-primary/10 border border-border text-foreground rounded-lg hover:bg-primary/20 transition-colors font-sans font-bold text-sm text-center block"
         >
           Empezar con Starter
-        </Link>
+        </a>
       </div>
 
       {/* ── PRO (highlighted) ── */}
@@ -147,12 +148,14 @@ export function PricingCards() {
             <PlusCircle size={14} className="text-primary/50 shrink-0" />Extra $7 c/100
           </li>
         </ul>
-        <Link
-          href="/sign-up?plan=pro"
+        <a
+          href="https://wa.me/56936119298?text=Hola!%20Me%20interesa%20el%20plan%20Pro%20de%20TattooVision%20AI"
+          target="_blank"
+          rel="noopener noreferrer"
           className="w-full py-4 bg-primary text-white rounded-lg hover:shadow-glow transition-shadow font-sans font-bold text-sm text-center block"
         >
           Empezar con Pro
-        </Link>
+        </a>
       </div>
 
       {/* ── Agency ── */}
@@ -182,9 +185,14 @@ export function PricingCards() {
             <PlusCircle size={14} className="text-primary/50 shrink-0" />Extra $5 c/100
           </li>
         </ul>
-        <button className="w-full py-3 border border-border text-foreground rounded-lg hover:border-primary transition-colors font-sans font-bold text-sm">
+        <a
+          href="https://wa.me/56936119298?text=Hola!%20Me%20interesa%20el%20plan%20Agency%20de%20TattooVision%20AI"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full py-3 border border-border text-foreground rounded-lg hover:border-primary transition-colors font-sans font-bold text-sm text-center block"
+        >
           Contactar ventas
-        </button>
+        </a>
       </div>
 
     </div>

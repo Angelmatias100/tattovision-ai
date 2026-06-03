@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Menu, LayoutDashboard, Users, Calendar, Megaphone } from "lucide-react";
 import Sidebar from "./Sidebar";
 
@@ -43,9 +44,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         >
           <Menu className="w-5 h-5 text-foreground" />
         </button>
-        <span className="font-playfair text-sm font-bold text-foreground uppercase tracking-wide">
-          TattooVision AI
-        </span>
+        <Image src="/logo.jpeg" alt="TattooVision AI" width={120} height={35} className="object-contain h-auto" />
       </header>
 
       {/* Page content — offset for mobile top bar and bottom nav */}

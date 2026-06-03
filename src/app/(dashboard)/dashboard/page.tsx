@@ -53,12 +53,12 @@ function MetricCard({
   badgeVariant?: "success" | "neutral"; children?: React.ReactNode;
 }) {
   return (
-    <div className="bg-card border border-border rounded-lg p-6 shadow-card">
+    <div className="bg-card border border-border rounded-lg p-4 md:p-6 shadow-card">
       <p className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground mb-2">
         {label}
       </p>
       <div className="flex items-end justify-between">
-        <span className="font-mono text-4xl font-medium text-foreground">{value}</span>
+        <span className="font-mono text-2xl md:text-4xl font-medium text-foreground">{value}</span>
         {badge && (
           <span
             className={`text-xs font-bold px-2 py-1 rounded border ${
@@ -131,10 +131,10 @@ export default function DashboardPage() {
     data.pipeline.every((col) => col.count === 0);
 
   return (
-    <div className="p-10 max-w-[1400px] mx-auto">
+    <div className="p-4 md:p-10 max-w-[1400px] mx-auto">
       <UpgradeModal open={upgradeOpen} onClose={() => setUpgradeOpen(false)} />
       {/* ── Header ── */}
-      <header className="flex justify-between items-start mb-8">
+      <header className="flex justify-between items-start mb-4 md:mb-8">
         <div>
           <h2 className="font-playfair text-2xl md:text-3xl font-semibold text-foreground">
             {greeting}, {firstName} 👋
@@ -157,7 +157,7 @@ export default function DashboardPage() {
       </header>
 
       {/* ── Quick Actions ── */}
-      <div className="grid grid-cols-2 gap-3 mb-8 md:flex md:flex-wrap">
+      <div className="grid grid-cols-2 gap-3 mb-4 md:mb-8 md:flex md:flex-wrap">
         <Link href="/crm">
           <button className="w-full md:w-auto bg-primary text-white px-5 py-2.5 rounded-lg font-bold text-sm shadow-glow hover:shadow-glow-lg transition-all flex items-center justify-center gap-2">
             <Plus className="w-4 h-4" /> Nuevo lead
@@ -193,7 +193,7 @@ export default function DashboardPage() {
       )}
 
       {/* ── Metric Cards ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-4 md:mb-8">
         <MetricCard
           label="Leads este mes"
           value={loading || !data ? "—" : String(data.leads_this_month)}
@@ -225,10 +225,10 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Main Grid: Pipeline + Citas ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-10 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 md:gap-6 mb-4 md:mb-8">
         {/* Pipeline (60%) */}
-        <section className="lg:col-span-6 bg-card border border-border rounded-lg p-6">
-          <div className="flex justify-between items-center mb-6">
+        <section className="lg:col-span-6 bg-card border border-border rounded-lg p-4 md:p-6">
+          <div className="flex justify-between items-center mb-3 md:mb-6">
             <h4 className="font-playfair text-xl font-semibold text-foreground">
               Pipeline de leads
             </h4>
@@ -237,8 +237,9 @@ export default function DashboardPage() {
             </Link>
           </div>
 
+          <div className="overflow-x-auto">
           {loading ? (
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-4 gap-3 min-w-[320px]">
               {[0,1,2,3].map(i => (
                 <div key={i} className="space-y-3">
                   <div className="h-4 bg-border rounded animate-pulse mb-4" />
@@ -249,7 +250,7 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-4 gap-3 min-w-[320px]">
               {(data?.pipeline ?? []).map((col) => (
                 <div key={col.id} className={col.dim ? "space-y-3 opacity-60" : "space-y-3"}>
                   <div className="flex items-center gap-2 pb-2 border-b border-border">
@@ -287,11 +288,12 @@ export default function DashboardPage() {
               ))}
             </div>
           )}
+          </div>
         </section>
 
         {/* Próximas citas (40%) */}
-        <section className="lg:col-span-4 bg-card border border-border rounded-lg p-6 flex flex-col">
-          <div className="flex justify-between items-center mb-6">
+        <section className="lg:col-span-4 bg-card border border-border rounded-lg p-4 md:p-6 flex flex-col">
+          <div className="flex justify-between items-center mb-3 md:mb-6">
             <h4 className="font-playfair text-xl font-semibold text-foreground">
               Próximas citas
             </h4>
@@ -371,9 +373,9 @@ export default function DashboardPage() {
       {/* ── Bottom card: onboarding tips for new users / AI card for active users ── */}
       {isNewUser ? (
         <section
-          className="bg-card border border-border rounded-xl p-8"
+          className="bg-card border border-border rounded-xl p-4 md:p-8"
         >
-          <div className="flex items-center gap-2 mb-6">
+          <div className="flex items-center gap-2 mb-4 md:mb-6">
             <UserPlus className="w-5 h-5 text-primary" />
             <h5 className="font-playfair text-xl font-semibold text-foreground">
               Primeros pasos
@@ -434,7 +436,7 @@ export default function DashboardPage() {
         </section>
       ) : (
         <section
-          className="relative bg-card border border-primary/40 rounded-xl p-8 overflow-hidden"
+          className="relative bg-card border border-primary/40 rounded-xl p-4 md:p-8 overflow-hidden"
           style={{ boxShadow: "0 0 40px rgba(139,0,255,0.15)" }}
         >
           <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent pointer-events-none" />
@@ -477,7 +479,7 @@ export default function DashboardPage() {
       )}
 
       {/* ── Footer ── */}
-      <footer className="mt-8 border-t border-border py-8 flex flex-col md:flex-row justify-between items-center text-muted-foreground text-sm">
+      <footer className="mt-4 md:mt-8 border-t border-border py-4 md:py-8 flex flex-col md:flex-row justify-between items-center text-muted-foreground text-sm">
         <p>© 2024 TattooVision AI. Todos los derechos reservados.</p>
         <div className="flex gap-6 mt-3 md:mt-0">
           {["Privacidad", "Términos", "Soporte", "Contacto"].map((item) => (

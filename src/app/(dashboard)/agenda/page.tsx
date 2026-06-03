@@ -206,35 +206,44 @@ function dbToUiAppt(
 function CalendarSkeleton() {
   return (
     <div className="flex flex-1 overflow-hidden animate-pulse">
-      <div className="flex-1 flex flex-col">
-        {/* Day header */}
-        <div className="grid grid-cols-[80px_repeat(7,1fr)] border-b border-border h-14 shrink-0">
-          <div className="border-r border-border" />
-          {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="flex items-center justify-center border-r last:border-0 border-border">
-              <div className="h-3 w-10 rounded bg-white/5" />
-            </div>
-          ))}
-        </div>
-        {/* Hour rows */}
-        {HOURS.slice(0, 6).map(h => (
-          <div key={h} className="grid grid-cols-[80px_repeat(7,1fr)] shrink-0" style={{ height: ROW_H }}>
-            <div className="border-r border-b border-border flex justify-center pt-2">
-              <div className="h-2 w-8 rounded bg-white/5" />
-            </div>
+      <div className="flex-1 overflow-x-auto overflow-y-auto">
+        <div className="min-w-[610px]">
+          {/* Day header */}
+          <div
+            className="grid border-b border-border h-14 shrink-0"
+            style={{ gridTemplateColumns: "50px repeat(7, minmax(80px, 1fr))" }}
+          >
+            <div className="border-r border-border" />
             {Array.from({ length: 7 }).map((_, i) => (
-              <div key={i} className="border-b border-border relative"
-                style={{ borderRight: i < 6 ? "1px solid hsl(var(--border))" : "none" }}>
-                {i === 1 && h === 10 && (
-                  <div className="absolute inset-x-1 top-0 h-[160px] rounded bg-primary/10 border-l-4 border-primary/30" />
-                )}
+              <div key={i} className="flex items-center justify-center border-r last:border-0 border-border">
+                <div className="h-3 w-10 rounded bg-white/5" />
               </div>
             ))}
           </div>
-        ))}
+          {/* Hour rows */}
+          {HOURS.slice(0, 6).map(h => (
+            <div
+              key={h}
+              className="grid shrink-0"
+              style={{ height: ROW_H, gridTemplateColumns: "50px repeat(7, minmax(80px, 1fr))" }}
+            >
+              <div className="border-r border-b border-border flex justify-center pt-2">
+                <div className="h-2 w-8 rounded bg-white/5" />
+              </div>
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="border-b border-border relative"
+                  style={{ borderRight: i < 6 ? "1px solid hsl(var(--border))" : "none" }}>
+                  {i === 1 && h === 10 && (
+                    <div className="absolute inset-x-1 top-0 h-[160px] rounded bg-primary/10 border-l-4 border-primary/30" />
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
-      {/* Sidebar */}
-      <aside className="w-80 border-l border-border bg-[#090010] shrink-0">
+      {/* Sidebar - hidden on mobile */}
+      <aside className="hidden md:flex flex-col w-80 border-l border-border bg-[#090010] shrink-0">
         <div className="p-6 border-b border-border">
           <div className="h-4 w-28 rounded bg-white/5" />
         </div>
@@ -257,17 +266,21 @@ function CalendarSkeleton() {
 
 // ── Share modal ───────────────────────────────────────────────────────────────
 
-function ShareModal({ bookingUrl, onClose }: { bookingUrl: string; onClose: () => void }) {
+function ShareModal({ bookingUrl, onClose }: { bookingUrl: string | null; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
+    if (!bookingUrl) return;
     navigator.clipboard.writeText(bookingUrl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   };
 
-  const waUrl = `https://wa.me/?text=${encodeURIComponent(`Hola! Puedes reservar tu cita aquí: ${bookingUrl}`)}`;
+  const waText = bookingUrl
+    ? `Hola! Puedes reservar tu cita conmigo aquí 🎨\n${bookingUrl}`
+    : "";
+  const waUrl = bookingUrl ? `https://wa.me/?text=${encodeURIComponent(waText)}` : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -288,39 +301,57 @@ function ShareModal({ bookingUrl, onClose }: { bookingUrl: string; onClose: () =
           </button>
         </div>
 
-        <div className="space-y-3">
-          <label className="block text-xs font-medium text-muted-foreground">URL de reserva</label>
-          <div className="flex gap-2">
-            <div className="flex-1 bg-[#1A0025] border border-border rounded-lg px-3 py-2.5 text-xs font-mono text-primary truncate">
+        {bookingUrl ? (
+          <div className="space-y-3">
+            <label className="block text-xs font-medium text-muted-foreground">URL de reserva</label>
+            <div className="bg-[#1A0025] border border-border rounded-lg px-3 py-2.5 text-xs font-mono text-primary break-all">
               {bookingUrl}
             </div>
             <button
               onClick={handleCopy}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-xs font-bold border transition-all shrink-0 ${
+              className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-bold border transition-all ${
                 copied
                   ? "bg-green-500/10 border-green-500/40 text-green-400"
-                  : "bg-primary/10 border-primary/35 text-lavender hover:bg-primary/20"
+                  : "bg-primary/10 border-primary/35 hover:bg-primary/20"
               }`}
               style={{ color: copied ? undefined : "#C084FC" }}
             >
-              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? "Copiado" : "Copiar"}
+              {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {copied ? "¡Copiado!" : "Copiar link de reservas"}
             </button>
-          </div>
 
-          <a
-            href={waUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full py-3 rounded-lg font-bold text-sm text-white transition-colors"
-            style={{ background: "#25D366" }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-4 h-4">
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-            </svg>
-            Enviar por WhatsApp
-          </a>
-        </div>
+            {waUrl && (
+              <a
+                href={waUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-3 rounded-lg font-bold text-sm text-white transition-colors"
+                style={{ background: "#25D366" }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-4 h-4">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+                </svg>
+                Enviar por WhatsApp
+              </a>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-6 space-y-4">
+            <div
+              className="w-14 h-14 rounded-full flex items-center justify-center mx-auto"
+              style={{ background: "rgba(139,0,255,0.08)", border: "1px solid rgba(139,0,255,0.2)" }}
+            >
+              <Share2 className="w-6 h-6" style={{ color: "#8B00FF" }} />
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed px-4">
+              Completa tu perfil en{" "}
+              <a href="/configuracion" className="text-primary font-bold hover:underline">
+                Configuración
+              </a>{" "}
+              para obtener tu link de reservas
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -388,11 +419,11 @@ function ApptBlock({ appt }: { appt: Appointment }) {
           style={{ backgroundColor: STATUS_CFG[appt.status].color }}
         />
       </div>
-      <p className="text-[10px] font-medium leading-tight" style={{ color: c.label }}>
+      <p className="hidden md:block text-[10px] font-medium leading-tight" style={{ color: c.label }}>
         {appt.style}
       </p>
       {highPx >= 80 && (
-        <div className="flex items-center gap-1.5 mt-2">
+        <div className="hidden md:flex items-center gap-1.5 mt-2">
           <div
             className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0"
             style={{ backgroundColor: dim ? "#555" : c.border }}
@@ -906,34 +937,36 @@ export default function AgendaPage() {
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       {/* ── Header ── */}
-      <header className="h-20 px-8 flex items-center justify-between border-b border-border bg-black/40 backdrop-blur-xl shrink-0">
-        <div className="flex items-center gap-5">
-          <h2 className="font-playfair text-2xl font-semibold text-foreground">Agenda</h2>
-
-          {/* View toggle */}
-          <div className="flex bg-card rounded-lg p-1 border border-border gap-0.5">
-            {(["dia", "semana", "mes"] as ViewMode[]).map(v => (
+      <header className="px-4 md:px-8 py-3 md:py-0 md:h-20 border-b border-border bg-black/40 backdrop-blur-xl shrink-0">
+        {/* Mobile layout */}
+        <div className="flex md:hidden flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <h2 className="font-playfair text-xl font-semibold text-foreground">Agenda</h2>
+            <div className="flex items-center gap-2">
               <button
-                key={v}
-                onClick={() => setView(v)}
-                className={`px-4 py-1.5 text-sm rounded transition-colors ${
-                  view === v ? "bg-primary text-white font-bold" : "text-muted-foreground hover:text-foreground"
-                }`}
+                onClick={() => setShareOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-muted-foreground text-xs font-medium hover:border-primary/40 hover:text-primary transition-colors"
               >
-                {v === "dia" ? "Día" : v === "semana" ? "Semana" : "Mes"}
+                <Share2 className="w-4 h-4" />
+                Compartir
               </button>
-            ))}
+              <button
+                onClick={openModal}
+                className="bg-primary text-white px-3 py-2 rounded-lg font-bold text-xs flex items-center gap-1.5 shadow-glow active:scale-95"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Nueva cita
+              </button>
+            </div>
           </div>
-
-          {/* Week navigation */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between pb-1">
             <button
               onClick={() => setWeekOffset(o => o - 1)}
               className="text-primary hover:text-foreground transition-colors p-1"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
-            <span className="font-semibold text-foreground min-w-[220px] text-center text-sm">
+            <span className="font-semibold text-foreground text-xs text-center">
               {formatWeekRange(monday)}
             </span>
             <button
@@ -945,23 +978,62 @@ export default function AgendaPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          {/* Artist filter (real artists from DB) */}
-          <div className="relative">
-            <select
-              value={filterArtist}
-              onChange={e => setFilter(e.target.value)}
-              className="bg-card border border-border rounded-lg px-4 py-2 text-sm text-foreground appearance-none pr-9 focus:border-primary outline-none cursor-pointer"
-            >
-              <option value="todos">Todos los artistas</option>
-              {artists.map(a => (
-                <option key={a.id} value={a.id}>{a.name}</option>
+        {/* Desktop layout */}
+        <div className="hidden md:flex items-center justify-between h-full">
+          <div className="flex items-center gap-5">
+            <h2 className="font-playfair text-2xl font-semibold text-foreground">Agenda</h2>
+
+            {/* View toggle */}
+            <div className="flex bg-card rounded-lg p-1 border border-border gap-0.5">
+              {(["dia", "semana", "mes"] as ViewMode[]).map(v => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  className={`px-4 py-1.5 text-sm rounded transition-colors ${
+                    view === v ? "bg-primary text-white font-bold" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {v === "dia" ? "Día" : v === "semana" ? "Semana" : "Mes"}
+                </button>
               ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            </div>
+
+            {/* Week navigation */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setWeekOffset(o => o - 1)}
+                className="text-primary hover:text-foreground transition-colors p-1"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <span className="font-semibold text-foreground min-w-[220px] text-center text-sm">
+                {formatWeekRange(monday)}
+              </span>
+              <button
+                onClick={() => setWeekOffset(o => o + 1)}
+                className="text-primary hover:text-foreground transition-colors p-1"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
-          {bookingUrl && (
+          <div className="flex items-center gap-4">
+            {/* Artist filter */}
+            <div className="relative">
+              <select
+                value={filterArtist}
+                onChange={e => setFilter(e.target.value)}
+                className="bg-card border border-border rounded-lg px-4 py-2 text-sm text-foreground appearance-none pr-9 focus:border-primary outline-none cursor-pointer"
+              >
+                <option value="todos">Todos los artistas</option>
+                {artists.map(a => (
+                  <option key={a.id} value={a.id}>{a.name}</option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            </div>
+
             <button
               onClick={() => setShareOpen(true)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border text-muted-foreground text-sm font-medium hover:border-primary/40 hover:text-primary transition-colors"
@@ -969,15 +1041,15 @@ export default function AgendaPage() {
               <Share2 className="w-4 h-4" />
               Compartir agenda
             </button>
-          )}
 
-          <button
-            onClick={openModal}
-            className="bg-primary text-white px-6 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 shadow-glow hover:shadow-glow-lg transition-all active:scale-95"
-          >
-            <Plus className="w-4 h-4" />
-            Nueva cita
-          </button>
+            <button
+              onClick={openModal}
+              className="bg-primary text-white px-6 py-2.5 rounded-lg font-bold text-sm flex items-center gap-2 shadow-glow hover:shadow-glow-lg transition-all active:scale-95"
+            >
+              <Plus className="w-4 h-4" />
+              Nueva cita
+            </button>
+          </div>
         </div>
       </header>
 
@@ -989,68 +1061,73 @@ export default function AgendaPage() {
       ) : (
         <div className="flex flex-1 overflow-hidden">
           {/* ── Calendar grid ── */}
-          <div className="flex-1 flex flex-col overflow-y-auto">
-            {/* Sticky day header */}
-            <div className="grid grid-cols-[80px_repeat(7,1fr)] border-b border-border sticky top-0 bg-black z-10 shrink-0">
-              <div className="h-14 flex items-center justify-center border-r border-border">
-                <Clock className="w-4 h-4 text-muted-foreground" />
-              </div>
-              {weekDays.map((date, i) => {
-                const isToday = isCurrentWeek && i === todayIdx;
-                return (
-                  <div
-                    key={i}
-                    className={`h-14 flex flex-col items-center justify-center border-r last:border-r-0 border-border transition-colors ${
-                      isToday ? "bg-primary/10" : ""
-                    }`}
-                  >
-                    <span className="font-mono text-[10px] text-muted-foreground tracking-widest">
-                      {DAY_LABELS[i]}
-                    </span>
-                    <span
-                      className={`font-playfair text-lg font-semibold mt-0.5 w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
-                        isToday ? "bg-primary text-white" : "text-foreground"
-                      }`}
-                    >
-                      {date.getDate()}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Hour rows */}
-            {HOURS.map(hour => (
+          <div className="flex-1 overflow-x-auto overflow-y-auto">
+            <div className="min-w-[610px]">
+              {/* Sticky day header */}
               <div
-                key={hour}
-                className="grid grid-cols-[80px_repeat(7,1fr)] shrink-0"
-                style={{ height: ROW_H }}
+                className="grid border-b border-border sticky top-0 bg-black z-10 shrink-0"
+                style={{ gridTemplateColumns: "50px repeat(7, minmax(80px, 1fr))" }}
               >
-                <div className="border-r border-b border-border flex justify-center pt-2">
-                  <span className="font-mono text-[11px] text-muted-foreground">
-                    {String(hour).padStart(2, "0")}:00
-                  </span>
+                <div className="h-14 flex items-center justify-center border-r border-border">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
                 </div>
-                {weekDays.map((_, dayIdx) => {
-                  const appts = visibleAppts.filter(
-                    a => a.dayIndex === dayIdx && a.startHour === hour
-                  );
+                {weekDays.map((date, i) => {
+                  const isToday = isCurrentWeek && i === todayIdx;
                   return (
                     <div
-                      key={dayIdx}
-                      className="border-b border-border relative"
-                      style={{ borderRight: dayIdx < 6 ? "1px solid hsl(var(--border))" : "none" }}
+                      key={i}
+                      className={`h-14 flex flex-col items-center justify-center border-r last:border-r-0 border-border transition-colors ${
+                        isToday ? "bg-primary/10" : ""
+                      }`}
                     >
-                      {appts.map(a => <ApptBlock key={a.id} appt={a} />)}
+                      <span className="font-mono text-[10px] text-muted-foreground tracking-widest">
+                        {DAY_LABELS[i]}
+                      </span>
+                      <span
+                        className={`font-playfair text-lg font-semibold mt-0.5 w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
+                          isToday ? "bg-primary text-white" : "text-foreground"
+                        }`}
+                      >
+                        {date.getDate()}
+                      </span>
                     </div>
                   );
                 })}
               </div>
-            ))}
+
+              {/* Hour rows */}
+              {HOURS.map(hour => (
+                <div
+                  key={hour}
+                  className="grid shrink-0"
+                  style={{ height: ROW_H, gridTemplateColumns: "50px repeat(7, minmax(80px, 1fr))" }}
+                >
+                  <div className="border-r border-b border-border flex justify-center pt-2">
+                    <span className="font-mono text-[11px] text-muted-foreground">
+                      {String(hour).padStart(2, "0")}:00
+                    </span>
+                  </div>
+                  {weekDays.map((_, dayIdx) => {
+                    const appts = visibleAppts.filter(
+                      a => a.dayIndex === dayIdx && a.startHour === hour
+                    );
+                    return (
+                      <div
+                        key={dayIdx}
+                        className="border-b border-border relative"
+                        style={{ borderRight: dayIdx < 6 ? "1px solid hsl(var(--border))" : "none" }}
+                      >
+                        {appts.map(a => <ApptBlock key={a.id} appt={a} />)}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* ── Right sidebar ── */}
-          <aside className="w-80 bg-[#090010] border-l border-border flex flex-col overflow-hidden shrink-0">
+          {/* ── Right sidebar — hidden on mobile ── */}
+          <aside className="hidden md:flex flex-col w-80 bg-[#090010] border-l border-border overflow-hidden shrink-0">
             <div className="p-6 border-b border-border flex justify-between items-center bg-black/20 shrink-0">
               <h3 className="font-playfair text-lg font-semibold text-foreground">Citas de hoy</h3>
               <button className="text-muted-foreground hover:text-foreground transition-colors">
@@ -1070,7 +1147,7 @@ export default function AgendaPage() {
               )}
             </div>
 
-            {/* Artist legend (from real DB artists) */}
+            {/* Artist legend */}
             {artists.length > 0 && (
               <div className="p-6 border-t border-border shrink-0">
                 <p className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase mb-4">
@@ -1103,7 +1180,7 @@ export default function AgendaPage() {
       )}
 
       {/* ── Share modal ── */}
-      {shareOpen && bookingUrl && (
+      {shareOpen && (
         <ShareModal bookingUrl={bookingUrl} onClose={() => setShareOpen(false)} />
       )}
     </div>

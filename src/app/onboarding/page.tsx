@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Check, AtSign, ToggleLeft, ToggleRight,
   Building2, MapPin, User,
@@ -817,14 +818,8 @@ export default function OnboardingPage() {
       {/* Centered column — max 560px */}
       <div className="w-full" style={{ maxWidth: 560 }}>
         {/* Logo */}
-        <div className="mb-8 text-center">
-          <span
-            className="font-playfair text-xl font-bold tracking-tight"
-            style={{ color: "#8B00FF" }}
-          >
-            TattooVision
-          </span>
-          <span className="font-playfair text-xl font-bold tracking-tight text-white"> AI</span>
+        <div className="mb-8 flex justify-center">
+          <Image src="/logo.jpeg" alt="TattooVision AI" width={120} height={35} className="object-contain h-auto" priority />
         </div>
 
         {/* Progress bar — sits above the card */}
