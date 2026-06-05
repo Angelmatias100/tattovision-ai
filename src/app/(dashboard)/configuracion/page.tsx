@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { usePlan } from "@/components/shared/PlanContext";
 import {
   Building2, Users, Link2, CreditCard, Plus, Check, X,
@@ -633,13 +633,15 @@ function TabIntegraciones() {
 
 function TabPlan() {
   const { plan: currentPlan, tokensBalance, tokensLimit, tokensResetDate, loading } = usePlan();
+  const planCardsRef = useRef<HTMLDivElement>(null);
 
-  const tokenPct    = tokensLimit > 0 ? Math.min((tokensBalance / tokensLimit) * 100, 100) : 0;
-  const currentIdx  = PLAN_OPTIONS.findIndex((p) => p.id === currentPlan);
-  const effectiveIdx = currentIdx >= 0 ? currentIdx : 0;
+  const isFree = !loading && (!currentPlan || currentPlan === "free");
 
-  const planName    = PLAN_OPTIONS[effectiveIdx]?.name ?? "Starter";
-  const remaining   = Math.max(tokensLimit - tokensBalance, 0);
+  const tokenPct          = tokensLimit > 0 ? Math.min((tokensBalance / tokensLimit) * 100, 100) : 0;
+  const currentPlanOption = PLAN_OPTIONS.find(p => p.id === currentPlan);
+  const planName          = currentPlanOption?.name ?? "Gratuito";
+  const remaining         = Math.max(tokensLimit - tokensBalance, 0);
+  const currentPlanIdx    = PLAN_OPTIONS.findIndex(p => p.id === currentPlan);
 
   let renewLabel = "Se renuevan mensualmente";
   if (tokensResetDate) {
@@ -647,26 +649,42 @@ function TabPlan() {
     renewLabel = `Se renuevan el ${reset.toLocaleDateString("es-CL", { day: "numeric", month: "long" })}`;
   }
 
+  const WA_LINKS: Record<string, string> = {
+    starter: "https://wa.me/56936119298?text=Quiero%20el%20plan%20Starter%20de%20TattooVision%20AI",
+    pro:     "https://wa.me/56936119298?text=Quiero%20el%20plan%20Pro%20de%20TattooVision%20AI",
+    agency:  "https://wa.me/56936119298?text=Quiero%20el%20plan%20Agency%20de%20TattooVision%20AI",
+  };
+
   return (
     <div className="space-y-8 max-w-3xl">
-      {/* Plan cards */}
-      <div className="grid grid-cols-3 gap-4">
-        {PLAN_OPTIONS.map((plan, i) => {
-          const isCurrent = plan.id === currentPlan || (currentIdx < 0 && i === 0);
-          const isUpgrade = i > effectiveIdx;
 
-          let btnLabel = "";
-          let btnStyle: React.CSSProperties = {};
-          if (isCurrent) {
-            btnLabel = "Plan actual";
-            btnStyle = { background: "rgba(45,0,80,0.3)", color: "#4a3060", borderColor: "rgba(45,0,80,0.4)", cursor: "not-allowed" };
-          } else if (isUpgrade) {
-            btnLabel = "Mejorar plan";
-            btnStyle = { background: "rgba(139,0,255,0.12)", color: "#C084FC", borderColor: "rgba(139,0,255,0.4)" };
-          } else {
-            btnLabel = "Bajar plan";
-            btnStyle = { background: "rgba(255,255,255,0.03)", color: "#988ca2", borderColor: "rgba(255,255,255,0.1)" };
-          }
+      {/* Free plan banner */}
+      {!loading && isFree && (
+        <div
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 rounded-xl border"
+          style={{ background: "rgba(139,0,255,0.06)", borderColor: "rgba(139,0,255,0.25)" }}
+        >
+          <div>
+            <p className="text-sm font-bold text-foreground">Estás explorando TattooVision gratis.</p>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed max-w-sm">
+              Activa un plan para desbloquear la IA.
+            </p>
+          </div>
+          <button
+            onClick={() => planCardsRef.current?.scrollIntoView({ behavior: "smooth" })}
+            className="flex-shrink-0 px-4 py-2 rounded-lg text-xs font-bold transition-colors"
+            style={{ background: "rgba(139,0,255,0.15)", color: "#C084FC", border: "1px solid rgba(139,0,255,0.3)" }}
+          >
+            Ver planes
+          </button>
+        </div>
+      )}
+
+      {/* Plan cards */}
+      <div ref={planCardsRef} className="grid grid-cols-3 gap-4">
+        {PLAN_OPTIONS.map((plan, i) => {
+          const isCurrent = !loading && !isFree && plan.id === currentPlan;
+          const isUpgrade = !isFree && currentPlanIdx >= 0 && i > currentPlanIdx;
 
           return (
             <div
@@ -694,7 +712,7 @@ function TabPlan() {
                     ACTUAL
                   </span>
                 )}
-                {!isCurrent && plan.badge && (
+                {!isCurrent && !isFree && plan.badge && (
                   <span
                     className="text-[10px] font-bold px-2 py-0.5 rounded flex-shrink-0"
                     style={{ background: "rgba(82,201,122,0.15)", color: "#52C97A", border: "1px solid rgba(82,201,122,0.3)" }}
@@ -720,14 +738,30 @@ function TabPlan() {
                 ))}
               </ul>
 
-              {/* Action button */}
-              <button
-                disabled={isCurrent}
-                className="w-full py-2 rounded-lg text-xs font-bold border transition-colors"
-                style={btnStyle}
-              >
-                {btnLabel}
-              </button>
+              {/* Action */}
+              {isCurrent ? (
+                <button
+                  disabled
+                  className="w-full py-2 rounded-lg text-xs font-bold border"
+                  style={{ background: "rgba(45,0,80,0.3)", color: "#4a3060", borderColor: "rgba(45,0,80,0.4)", cursor: "not-allowed" }}
+                >
+                  Plan actual
+                </button>
+              ) : (
+                <a
+                  href={WA_LINKS[plan.id] ?? "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2 rounded-lg text-xs font-bold border text-center block transition-colors"
+                  style={
+                    isFree || isUpgrade
+                      ? { background: "rgba(139,0,255,0.12)", color: "#C084FC", borderColor: "rgba(139,0,255,0.4)" }
+                      : { background: "rgba(255,255,255,0.03)", color: "#988ca2", borderColor: "rgba(255,255,255,0.1)" }
+                  }
+                >
+                  {isFree ? "Activar plan" : isUpgrade ? "Mejorar plan" : "Bajar plan"}
+                </a>
+              )}
             </div>
           );
         })}
@@ -740,10 +774,12 @@ function TabPlan() {
             <Zap className="w-4 h-4 text-primary" />
             <span className="text-sm font-bold text-foreground">TV Tokens este mes</span>
           </div>
-          <span className="text-sm font-mono text-foreground">
-            <span className="text-primary font-bold">{loading ? "—" : tokensBalance}</span>
-            <span className="text-muted-foreground"> / {loading ? "—" : tokensLimit}</span>
-          </span>
+          {!isFree && (
+            <span className="text-sm font-mono text-foreground">
+              <span className="text-primary font-bold">{loading ? "—" : tokensBalance}</span>
+              <span className="text-muted-foreground"> / {loading ? "—" : tokensLimit}</span>
+            </span>
+          )}
         </div>
         <div className="h-3 rounded-full overflow-hidden" style={{ background: "rgba(45,0,80,0.6)" }}>
           <div
@@ -756,7 +792,11 @@ function TabPlan() {
           />
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          {loading ? "Cargando…" : `${remaining} tokens restantes en tu plan ${planName}. ${renewLabel}.`}
+          {loading
+            ? "Cargando…"
+            : isFree
+            ? "Plan gratuito — 50 tokens de prueba"
+            : `${remaining} tokens restantes en tu plan ${planName}. ${renewLabel}.`}
         </p>
       </SectionCard>
 
@@ -769,10 +809,7 @@ function TabPlan() {
         >
           <div className="grid grid-cols-[1fr_80px_100px_80px] gap-4 px-5 py-3 border-b border-border">
             {["Fecha", "Monto", "Plan", "Estado"].map((h) => (
-              <span
-                key={h}
-                className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider"
-              >
+              <span key={h} className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                 {h}
               </span>
             ))}

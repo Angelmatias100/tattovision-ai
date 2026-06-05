@@ -32,7 +32,7 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     fetch("/api/dashboard")
       .then((r) => r.json())
       .then((data) => {
-        if (data?.plan)                      setPlan(data.plan);
+        setPlan(data?.plan ?? "free");
         if (data?.tv_tokens_balance != null) setTokensBalance(data.tv_tokens_balance);
         if (data?.tv_tokens_limit   != null) setTokensLimit(data.tv_tokens_limit);
         if (data?.tv_tokens_reset_date !== undefined) setTokensResetDate(data.tv_tokens_reset_date);

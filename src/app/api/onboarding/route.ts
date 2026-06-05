@@ -84,8 +84,8 @@ export async function POST(req: NextRequest) {
           monthly_goal:         monthlyGoal,
           instagram_url:        instagramUrl,
           booking_slug:         bookingSlug,
-          plan:                 'starter',
-          tv_tokens_balance:    200,
+          plan:                 'free',
+          tv_tokens_balance:    50,
           tv_tokens_reset_date: resetDateStr,
         },
         { onConflict: 'user_id' }  // idempotent — re-running onboarding just updates

@@ -15,7 +15,6 @@ import {
   Zap,
 } from "lucide-react";
 import { usePlan } from "@/components/shared/PlanContext";
-import { isPaidPlan } from "@/lib/plan";
 
 const NAV_ITEMS = [
   { href: "/dashboard",       label: "Dashboard",       icon: LayoutDashboard },
@@ -99,7 +98,7 @@ export default function Sidebar({
       {/* Bottom area */}
       <div className="px-4 mt-auto">
         {/* Upgrade CTA — only show for free/starter */}
-        {!isPaidPlan(plan) && (
+        {(!plan || plan === "free") && (
           <Link href="/configuracion#plan">
             <button className="w-full py-2.5 px-4 mb-4 rounded-lg bg-primary text-white font-bold text-sm shadow-glow hover:shadow-glow-lg transition-all flex items-center justify-center gap-2">
               <Zap className="w-4 h-4" />
