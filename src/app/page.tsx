@@ -15,7 +15,7 @@ import { PricingCards } from "@/components/PricingCards";
 function Navbar() {
   return (
     <header className="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-md border-b border-border">
-      <nav className="h-16 px-5 md:px-10 max-w-[1440px] mx-auto grid grid-cols-3 items-center">
+      <nav className="h-16 px-5 md:px-10 max-w-[1440px] mx-auto flex items-center justify-between">
 
         {/* Left — nav links */}
         <div className="hidden md:flex items-center gap-8">
@@ -26,16 +26,9 @@ function Navbar() {
             Precios
           </a>
         </div>
-        {/* Mobile: empty left cell so logo stays centered */}
-        <div className="md:hidden" />
-
-        {/* Center — logo */}
-        <div className="flex justify-center">
-          <Image src="/logo.jpeg" alt="TattooVision AI" width={130} height={38} className="object-contain h-auto" priority />
-        </div>
 
         {/* Right — auth CTAs */}
-        <div className="flex items-center justify-end gap-3">
+        <div className="flex items-center gap-3 ml-auto">
           <Link
             href="/sign-in"
             className="hidden md:block text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -164,9 +157,17 @@ function Hero() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/10 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="max-w-[1440px] mx-auto text-center relative z-10">
-        <p className="font-mono text-xs tracking-[0.2em] uppercase text-primary mb-4">
-          TattooVision AI
-        </p>
+        {/* Logo grande centrado */}
+        <div className="flex justify-center mb-10">
+          <Image
+            src="/logo.jpeg"
+            alt="TattooVision AI"
+            width={300}
+            height={88}
+            className="object-contain h-auto"
+            priority
+          />
+        </div>
 
         <h1 className="font-playfair text-4xl md:text-6xl font-bold text-foreground mb-4 max-w-4xl mx-auto leading-tight tracking-tight">
           El estratega de marketing para tu estudio de tatuaje
