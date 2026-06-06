@@ -15,9 +15,9 @@ import { PricingCards } from "@/components/PricingCards";
 function Navbar() {
   return (
     <header className="fixed top-0 w-full z-50 bg-black/80 backdrop-blur-md border-b border-border">
-      <nav className="flex justify-between items-center h-16 px-5 md:px-10 max-w-[1440px] mx-auto">
-        <Image src="/logo.jpeg" alt="TattooVision AI" width={130} height={38} className="object-contain h-auto" priority />
+      <nav className="h-16 px-5 md:px-10 max-w-[1440px] mx-auto grid grid-cols-3 items-center">
 
+        {/* Left — nav links */}
         <div className="hidden md:flex items-center gap-8">
           <a href="#features" className="text-muted-foreground hover:text-primary transition-colors text-sm">
             Características
@@ -26,8 +26,16 @@ function Navbar() {
             Precios
           </a>
         </div>
+        {/* Mobile: empty left cell so logo stays centered */}
+        <div className="md:hidden" />
 
-        <div className="flex items-center gap-3">
+        {/* Center — logo */}
+        <div className="flex justify-center">
+          <Image src="/logo.jpeg" alt="TattooVision AI" width={130} height={38} className="object-contain h-auto" priority />
+        </div>
+
+        {/* Right — auth CTAs */}
+        <div className="flex items-center justify-end gap-3">
           <Link
             href="/sign-in"
             className="hidden md:block text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -41,6 +49,7 @@ function Navbar() {
             Prueba gratis
           </Link>
         </div>
+
       </nav>
     </header>
   );
