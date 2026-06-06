@@ -861,7 +861,7 @@ export default function AgendaPage() {
 
   const { bookingSlug } = usePlan();
   const bookingUrl = bookingSlug
-    ? `${typeof window !== "undefined" ? window.location.origin : "https://tattovision-ai.vercel.app"}/booking/${bookingSlug}`
+    ? `${typeof window !== "undefined" ? window.location.origin : "https://www.tattovision.com"}/booking/${bookingSlug}`
     : null;
 
   // Compute current week dates (stable per weekOffset)

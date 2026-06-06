@@ -177,7 +177,7 @@ function TabNegocio() {
   const [copied,      setCopied]      = useState(false);
 
   const bookingUrl = bookingSlug
-    ? `${typeof window !== 'undefined' ? window.location.origin : 'https://tattovision-ai.vercel.app'}/booking/${bookingSlug}`
+    ? `${typeof window !== 'undefined' ? window.location.origin : 'https://www.tattovision.com'}/booking/${bookingSlug}`
     : null;
 
   const handleCopy = () => {

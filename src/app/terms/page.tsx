@@ -109,8 +109,8 @@ export default function TermsPage() {
             <li>Todas las actividades que ocurran bajo tu cuenta, autorizadas o no.</li>
             <li>
               Notificarnos de inmediato a{" "}
-              <a href="mailto:support@tattovision-ai.com" style={{ color: "#c8a97e" }}>
-                support@tattovision-ai.com
+              <a href="mailto:support@tattovision.com" style={{ color: "#c8a97e" }}>
+                support@tattovision.com
               </a>{" "}
               ante cualquier uso no autorizado de tu cuenta.
             </li>
@@ -318,8 +318,8 @@ export default function TermsPage() {
         <Section title="10. Terminación">
           <p>
             Puedes cancelar tu cuenta en cualquier momento contactándonos a{" "}
-            <a href="mailto:support@tattovision-ai.com" style={{ color: "#c8a97e" }}>
-              support@tattovision-ai.com
+            <a href="mailto:support@tattovision.com" style={{ color: "#c8a97e" }}>
+              support@tattovision.com
             </a>
             . Al cancelar:
           </p>
@@ -373,14 +373,14 @@ export default function TermsPage() {
             <p className="font-semibold" style={{ color: "#e8e0d4" }}>TattooVision AI</p>
             <p className="mt-2 text-sm" style={{ color: "#9a8e82" }}>
               Soporte:{" "}
-              <a href="mailto:support@tattovision-ai.com" style={{ color: "#c8a97e" }}>
-                support@tattovision-ai.com
+              <a href="mailto:support@tattovision.com" style={{ color: "#c8a97e" }}>
+                support@tattovision.com
               </a>
             </p>
             <p className="mt-1 text-sm" style={{ color: "#9a8e82" }}>
               Privacidad:{" "}
-              <a href="mailto:privacy@tattovision-ai.com" style={{ color: "#c8a97e" }}>
-                privacy@tattovision-ai.com
+              <a href="mailto:privacy@tattovision.com" style={{ color: "#c8a97e" }}>
+                privacy@tattovision.com
               </a>
             </p>
           </div>

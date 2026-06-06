@@ -261,10 +261,10 @@ export default function PrivacyPage() {
           <p className="mt-4">
             Para ejercer cualquiera de estos derechos, escríbenos a{" "}
             <a
-              href="mailto:privacy@tattovision-ai.com"
+              href="mailto:privacy@tattovision.com"
               style={{ color: "#c8a97e" }}
             >
-              privacy@tattovision-ai.com
+              privacy@tattovision.com
             </a>
             . Responderemos en un plazo máximo de 30 días hábiles.
           </p>
@@ -299,10 +299,10 @@ export default function PrivacyPage() {
             18 años. Si tienes conocimiento de que un menor ha proporcionado información
             personal en nuestra plataforma, contáctanos inmediatamente a{" "}
             <a
-              href="mailto:privacy@tattovision-ai.com"
+              href="mailto:privacy@tattovision.com"
               style={{ color: "#c8a97e" }}
             >
-              privacy@tattovision-ai.com
+              privacy@tattovision.com
             </a>{" "}
             y procederemos a eliminar esa información.
           </p>
@@ -339,19 +339,19 @@ export default function PrivacyPage() {
             <p className="mt-2 text-sm" style={{ color: "#9a8e82" }}>
               Privacidad y protección de datos:{" "}
               <a
-                href="mailto:privacy@tattovision-ai.com"
+                href="mailto:privacy@tattovision.com"
                 style={{ color: "#c8a97e" }}
               >
-                privacy@tattovision-ai.com
+                privacy@tattovision.com
               </a>
             </p>
             <p className="mt-1 text-sm" style={{ color: "#9a8e82" }}>
               Soporte general:{" "}
               <a
-                href="mailto:support@tattovision-ai.com"
+                href="mailto:support@tattovision.com"
                 style={{ color: "#c8a97e" }}
               >
-                support@tattovision-ai.com
+                support@tattovision.com
               </a>
             </p>
           </div>
