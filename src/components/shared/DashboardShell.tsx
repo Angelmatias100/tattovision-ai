@@ -44,7 +44,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         >
           <Menu className="w-5 h-5 text-foreground" />
         </button>
-        <Image src="/logo.jpeg" alt="TattooVision AI" width={120} height={35} className="object-contain h-auto" />
+        <Image src="/logo.jpeg" alt="TattooVision AI" width={120} height={35} className="object-contain h-8 w-auto mix-blend-multiply" />
       </header>
 
       {/* Page content — offset for mobile top bar and bottom nav */}
