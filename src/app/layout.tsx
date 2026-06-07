@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Playfair_Display, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { ServiceWorkerRegistration } from "@/components/shared/ServiceWorkerRegistration";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -24,6 +25,10 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["400", "500", "600"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#7c3aed",
+};
+
 export const metadata: Metadata = {
   title: {
     default: "TattooVision AI",
@@ -32,6 +37,15 @@ export const metadata: Metadata = {
   description:
     "Plataforma de marketing con IA para estudios de tatuaje. Gestiona leads, agenda, campañas Meta y contenido desde un solo lugar.",
   keywords: ["tattoo", "marketing", "IA", "estudio de tatuaje", "Meta Ads"],
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "TattooVision AI",
+  },
+  icons: {
+    apple: "/logo.jpeg",
+  },
 };
 
 // Clerk appearance — TattooVision AI dark theme
@@ -95,6 +109,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <body className="font-sans antialiased bg-background text-foreground min-h-screen">
+          <ServiceWorkerRegistration />
           {children}
         </body>
       </html>
