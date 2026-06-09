@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { usePlan } from "@/components/shared/PlanContext";
+import { useClerk } from "@clerk/nextjs";
 import {
   Building2, Users, Link2, CreditCard, Plus, Check, X,
   ToggleLeft, ToggleRight, Eye, EyeOff, Zap,
   ExternalLink, CheckCircle, AtSign, Copy, AlertCircle,
-  RefreshCw, Globe,
+  RefreshCw, Globe, LogOut,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -843,6 +844,7 @@ function TabPlan() {
 
 export default function ConfiguracionPage() {
   const [tab, setTab] = useState<Tab>("negocio");
+  const { signOut } = useClerk();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -855,11 +857,20 @@ export default function ConfiguracionPage() {
   return (
     <div className="p-10 max-w-[1200px] mx-auto">
       {/* ── Header ── */}
-      <header className="mb-8">
-        <h2 className="font-playfair text-4xl font-bold text-foreground">Configuración</h2>
-        <p className="text-muted-foreground text-sm mt-1">
-          Gestiona tu estudio, equipo e integraciones.
-        </p>
+      <header className="flex items-start justify-between gap-4 mb-8">
+        <div>
+          <h2 className="font-playfair text-4xl font-bold text-foreground">Configuración</h2>
+          <p className="text-muted-foreground text-sm mt-1">
+            Gestiona tu estudio, equipo e integraciones.
+          </p>
+        </div>
+        <button
+          onClick={() => signOut({ redirectUrl: "https://www.tattovision.com" })}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold border border-border text-muted-foreground hover:border-destructive/50 hover:text-destructive transition-colors flex-shrink-0 mt-1"
+        >
+          <LogOut className="w-4 h-4" />
+          Cerrar sesión
+        </button>
       </header>
 
       {/* ── Tab bar ── */}
