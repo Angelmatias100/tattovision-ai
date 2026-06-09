@@ -84,17 +84,11 @@ const clerkAppearance = {
   },
 } as const;
 
-// ClerkProvider is only mounted when a valid publishable key is configured.
-// During development without keys, auth pages show a setup prompt.
-const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-const isClerkConfigured =
-  typeof clerkKey === "string" &&
-  (clerkKey.startsWith("pk_test_") || clerkKey.startsWith("pk_live_"));
+const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
 function Providers({ children }: { children: React.ReactNode }) {
-  if (!isClerkConfigured) return <>{children}</>;
   return (
-    <ClerkProvider publishableKey={clerkKey!} appearance={clerkAppearance}>
+    <ClerkProvider publishableKey={clerkKey} appearance={clerkAppearance}>
       {children}
     </ClerkProvider>
   );
