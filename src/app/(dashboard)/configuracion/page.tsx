@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { usePlan } from "@/components/shared/PlanContext";
 import { useClerk } from "@clerk/nextjs";
