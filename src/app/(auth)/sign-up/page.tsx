@@ -26,6 +26,9 @@ export default function SignUpPage() {
           signInUrl="/sign-in"
           forceRedirectUrl="/onboarding"
         />
+        <p className="mt-4 text-center text-xs text-muted-foreground max-w-sm mx-auto">
+          Usa una contraseña segura: mínimo 8 caracteres, combinando letras, números y símbolos.
+        </p>
       </div>
     </main>
   );

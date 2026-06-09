@@ -164,7 +164,7 @@ function Hero() {
             alt="TattooVision AI"
             width={300}
             height={88}
-            className="object-contain h-12 w-auto md:h-[88px] md:w-[300px] mix-blend-multiply"
+            className="object-contain w-40 h-auto md:w-[300px] mix-blend-multiply"
             priority
           />
         </div>
