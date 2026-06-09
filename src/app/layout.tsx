@@ -58,6 +58,7 @@ const clerkAppearance = {
     colorInputBackground: "#1A0025",
     colorInputText: "#ffffff",
     colorNeutral: "#2D0050",
+    colorDanger: "#FF6B6B",
     borderRadius: "0.5rem",
     fontFamily: "var(--font-dm-sans), system-ui, sans-serif",
   },
@@ -77,6 +78,9 @@ const clerkAppearance = {
     footerActionLink: { color: "#C084FC" },
     dividerLine: { backgroundColor: "#2D0050" },
     dividerText: { color: "#C084FC" },
+    formFieldErrorText: { color: "#FF6B6B" },
+    formFieldWarningText: { color: "#FBBF24" },
+    identityPreviewEditButton: { color: "#C084FC" },
   },
 } as const;
 

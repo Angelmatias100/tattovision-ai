@@ -1,7 +1,6 @@
 const CACHE_NAME = 'tattoovision-v1';
 
 const PRECACHE_ASSETS = [
-  '/',
   '/manifest.json',
   '/logo.jpeg',
 ];
@@ -34,6 +33,9 @@ self.addEventListener('fetch', (event) => {
 
   // Only handle GET requests
   if (request.method !== 'GET') return;
+
+  // Never intercept navigation requests — Safari iOS rejects redirect responses from SW
+  if (event.request.mode === 'navigate') return;
 
   const url = new URL(request.url);
 
